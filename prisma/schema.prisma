@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+// Stored as strings in SQLite (no native enum support)
+// Values: STUDENT | LECTURER | ADMIN
+// ADMIN can also act as lecturer (full access)
+
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String?  // bcrypt hash — only for dev/credentials login
+  azureId        String?  @unique
+  role           String   @default("STUDENT") // STUDENT | LECTURER | ADMIN
+  // Student-specific
+  studentId      String?
+  level          String?  // BACHELOR | MASTER
+  programme      String?  // BBA | IBA | DIGI | MBA | MDBA | MEBI | DGOV
+  specialisation String?  // MARKETING | GLOBAL_MANAGEMENT | FINANCE | SUSTAINABLE_BUSINESS
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  topics               Topic[]               @relation("LecturerTopics")
+  preferences          Preference[]
+  match                Match?
+  coSupervisedMatches  MatchCoSupervisor[]   @relation("CoSupervisedMatches")
+}
+
+model Semester {
+  id                String   @id @default(cuid())
+  name              String   // e.g. "HS 2025/26"
+  lecturerDeadline  DateTime // last date lecturers can add/edit topics
+  studentDeadline   DateTime // last date students can submit preferences
+  isActive          Boolean  @default(false)
+  matchingApproved  Boolean  @default(false) // admin approved → ready to run
+  matchingRun       Boolean  @default(false) // algorithm has been executed
+  emailsSent        Boolean  @default(false) // results sent to students/lecturers
+  createdAt         DateTime @default(now())
+
+  topics      Topic[]
+  preferences Preference[]
+  matches     Match[]
+}
+
+model Topic {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  method          String   // QUANTITATIVE | QUALITATIVE | DESIGN_SCIENCE_RESEARCH | LITERATURE_REVIEW
+  language        String   // GERMAN | ENGLISH | BOTH
+  level           String   // BACHELOR | MASTER
+  // JSON arrays stored as strings e.g. '["BBA","IBA"]'
+  programmes      String
+  specialisations String   @default("[]") // only relevant for BACHELOR
+  maxStudents     Int      @default(1)    // 1–8 per topic
+  isActive        Boolean  @default(true)
+
+  semesterId  String
+  semester    Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  lecturerId  String
+  lecturer    User     @relation("LecturerTopics", fields: [lecturerId], references: [id])
+
+  preferences   Preference[]
+  matches       Match[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Preference {
+  id         String   @id @default(cuid())
+  rank       Int      // 1 = top preference, 4 = lowest
+  // Priority date — set on FIRST submission, NOT updated on edits
+  priorityDate DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  topicId    String
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, rank, semesterId])
+  @@unique([studentId, topicId, semesterId])
+}
+
+model Match {
+  id          String   @id @default(cuid())
+  matchedRank Int      // which preference rank was fulfilled (1–4), 0 = manual/unmatched
+  matchedAt   DateTime @default(now())
+
+  studentId  String   @unique // one student → one match
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  topicId    String
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  progress      ThesisProgress?
+  grading       ThesisGrading?
+  files         ThesisFile[]
+  coSupervisors MatchCoSupervisor[]
+}
+
+model MatchCoSupervisor {
+  matchId    String
+  match      Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  lecturerId String
+  lecturer   User   @relation("CoSupervisedMatches", fields: [lecturerId], references: [id], onDelete: Cascade)
+  addedAt    DateTime @default(now())
+
+  @@id([matchId, lecturerId])
+}
+
+model ThesisProgress {
+  id                  String    @id @default(cuid())
+  matchId             String    @unique
+  match               Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  proposalSubmitted   Boolean   @default(false)
+  proposalSubmittedAt DateTime?
+  proposalApproved    Boolean   @default(false)
+  proposalApprovedAt  DateTime?
+  midtermSubmitted    Boolean   @default(false)
+  midtermSubmittedAt  DateTime?
+  midtermApproved     Boolean   @default(false)
+  midtermApprovedAt   DateTime?
+
+  notifyOnUpload      Boolean   @default(false)
+
+  // How many times each milestone has been uploaded (max 2 for initial, bypassed on rework)
+  proposalUploadCount Int       @default(0)
+  midtermUploadCount  Int       @default(0)
+
+  // Lecturer can request a rework — student then gets a re-upload button
+  proposalRejected    Boolean   @default(false)
+  proposalRejectedAt  DateTime?
+  midtermRejected     Boolean   @default(false)
+  midtermRejectedAt   DateTime?
+
+  finalThesisSubmitted    Boolean   @default(false)
+  finalThesisSubmittedAt  DateTime?
+  finalThesisApproved     Boolean   @default(false)
+  finalThesisApprovedAt   DateTime?
+  finalThesisRejected     Boolean   @default(false)
+  finalThesisRejectedAt   DateTime?
+  finalThesisUploadCount  Int       @default(0)
+
+  finalPresentationSubmitted    Boolean   @default(false)
+  finalPresentationSubmittedAt  DateTime?
+  finalPresentationApproved     Boolean   @default(false)
+  finalPresentationApprovedAt   DateTime?
+  finalPresentationRejected     Boolean   @default(false)
+  finalPresentationRejectedAt   DateTime?
+  finalPresentationUploadCount  Int       @default(0)
+
+  updatedAt           DateTime  @updatedAt
+}
+
+model ThesisGrading {
+  id          String   @id @default(cuid())
+  matchId     String   @unique
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  // JSON: { "S1": { "score": 5.0, "comment": "" }, ... }
+  gradingJson String   @default("{}")
+  // JSON: { "LG_1_1": [1, 2, 0, 1], ... }
+  aolJson     String   @default("{}")
+  updatedAt   DateTime @updatedAt
+}
+
+model ThesisFile {
+  id              String   @id @default(cuid())
+  matchId         String
+  match           Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  milestone       String   // 'proposalSubmitted' | 'midtermSubmitted'
+  originalName    String
+  storedName      String
+  mimeType        String?
+  size            Int?
+  seenByLecturer  Boolean  @default(false)
+  uploadedAt      DateTime @default(now())
+}
