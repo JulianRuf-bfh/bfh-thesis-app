@@ -25,8 +25,8 @@ const REJECTED_FIELD: Record<string, string> = {
   finalThesisSubmitted:       'finalThesisRejected',
   finalPresentationSubmitted: 'finalPresentationRejected',
 }
-export const MAX_UPLOADS = 2
-export const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+const MAX_UPLOADS = 2
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
   'application/msword',
@@ -83,7 +83,7 @@ export async function POST(req: Request, { params }: { params: { matchId: string
   const ext = path.extname(file.name).toLowerCase()
   if (!ALLOWED_EXTENSIONS.has(ext)) {
     return NextResponse.json(
-      { error: `File type not allowed. Accepted: ${[...ALLOWED_EXTENSIONS].join(', ')}` },
+      { error: `File type not allowed. Accepted: ${Array.from(ALLOWED_EXTENSIONS).join(', ')}` },
       { status: 415 }
     )
   }
@@ -97,8 +97,9 @@ export async function POST(req: Request, { params }: { params: { matchId: string
   // ── Enforce upload limit (bypassed when lecturer requested a rework) ──────
   const countField    = COUNT_FIELD[milestone]
   const rejectedField = REJECTED_FIELD[milestone]
-  const currentCount  = match.progress?.[countField] ?? 0
-  const isRework      = match.progress?.[rejectedField] ?? false
+  const progress      = match.progress as Record<string, unknown> | null
+  const currentCount  = (progress?.[countField] as number) ?? 0
+  const isRework      = (progress?.[rejectedField] as boolean) ?? false
 
   if (!isRework && currentCount >= MAX_UPLOADS) {
     return NextResponse.json(

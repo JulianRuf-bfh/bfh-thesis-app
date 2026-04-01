@@ -18,9 +18,10 @@ export async function GET(
   })
 
   return NextResponse.json({
-    gradingJson: grading?.gradingJson ?? '{}',
-    aolJson:     grading?.aolJson ?? '{}',
-    updatedAt:   grading?.updatedAt ?? null,
+    gradingJson:  grading?.gradingJson ?? '{}',
+    aolJson:      grading?.aolJson ?? '{}',
+    submittedAt:  grading?.submittedAt ?? null,
+    updatedAt:    grading?.updatedAt ?? null,
   })
 }
 
@@ -38,7 +39,13 @@ export async function PATCH(
   }
 
   const body = await req.json()
-  const { gradingJson, aolJson } = body as { gradingJson?: string; aolJson?: string }
+  const { gradingJson, aolJson, submit, resetSubmission } = body as {
+    gradingJson?: string; aolJson?: string; submit?: boolean; resetSubmission?: boolean
+  }
+
+  if (resetSubmission && session.user.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const updated = await prisma.thesisGrading.upsert({
     where:  { matchId: params.matchId },
@@ -46,16 +53,20 @@ export async function PATCH(
       matchId:     params.matchId,
       gradingJson: gradingJson ?? '{}',
       aolJson:     aolJson ?? '{}',
+      ...(submit && { submittedAt: new Date() }),
     },
     update: {
       ...(gradingJson !== undefined && { gradingJson }),
       ...(aolJson     !== undefined && { aolJson }),
+      ...(submit && { submittedAt: new Date() }),
+      ...(resetSubmission && { submittedAt: null }),
     },
   })
 
   return NextResponse.json({
-    gradingJson: updated.gradingJson,
-    aolJson:     updated.aolJson,
-    updatedAt:   updated.updatedAt,
+    gradingJson:  updated.gradingJson,
+    aolJson:      updated.aolJson,
+    submittedAt:  updated.submittedAt ?? null,
+    updatedAt:    updated.updatedAt,
   })
 }

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     },
     include: {
       lecturer: { select: { id: true, name: true } },
-      _count: { select: { preferences: true } },
+      _count: { select: { preferences: true, matches: true } },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -77,7 +77,9 @@ export async function GET(req: NextRequest) {
     lecturerId: t.lecturerId,
     lecturerName: t.lecturer.name,
     preferenceCount: t._count.preferences,
-    availableSlots: Math.max(0, t.maxStudents - t._count.preferences),
+    matchCount: t._count.matches,
+    // Available slots = capacity minus whichever is higher: confirmed matches or reserved preferences
+    availableSlots: Math.max(0, t.maxStudents - Math.max(t._count.matches, t._count.preferences)),
     createdAt: t.createdAt.toISOString(),
   }))
 

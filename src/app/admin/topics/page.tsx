@@ -44,9 +44,15 @@ export default function AdminTopicsPage() {
 
       {loading ? (
         <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
-      ) : (
+      ) : (() => {
+        const visibleTopics = filters.hideFullTopics ? topics.filter(t => t.availableSlots > 0) : topics
+        const hiddenCount = topics.length - visibleTopics.length
+        return (
         <>
-          <p className="text-sm text-bfh-gray-mid">{topics.length} topics</p>
+          <p className="text-sm text-bfh-gray-mid">
+            {visibleTopics.length} topic{visibleTopics.length !== 1 ? 's' : ''}
+            {hiddenCount > 0 && <span> ({hiddenCount} full hidden)</span>}
+          </p>
           <div className="table-container">
             <table>
               <thead>
@@ -63,7 +69,7 @@ export default function AdminTopicsPage() {
                 </tr>
               </thead>
               <tbody>
-                {topics.map(t => (
+                {visibleTopics.map(t => (
                   <tr key={t.id}>
                     <td className="font-medium max-w-xs">
                       <div className="line-clamp-2 text-sm">{t.title}</div>
@@ -102,7 +108,8 @@ export default function AdminTopicsPage() {
             </table>
           </div>
         </>
-      )}
+        )
+      })()}
     </div>
   )
 }

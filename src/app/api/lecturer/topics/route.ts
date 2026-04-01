@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     specialisations: parseSpecialisations(t.specialisations),
     preferenceCount: t._count.preferences,
     matchCount: t._count.matches,
-    availableSlots: Math.max(0, t.maxStudents - t._count.preferences),
+    availableSlots: Math.max(0, t.maxStudents - Math.max(t._count.matches, t._count.preferences)),
   })))
 }
 
@@ -67,6 +67,9 @@ export async function POST(req: NextRequest) {
 
   if (new Date() > semester.lecturerDeadline) {
     return NextResponse.json({ error: 'Lecturer input deadline has passed' }, { status: 400 })
+  }
+  if (semester.matchingRun) {
+    return NextResponse.json({ error: 'Matching has already been run — topics are locked' }, { status: 400 })
   }
 
   const existingTopics = await prisma.topic.findMany({

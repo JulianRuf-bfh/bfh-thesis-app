@@ -8,23 +8,25 @@ import { cn } from '@/lib/utils'
 const navLinks: Record<string, { href: string; label: string }[]> = {
   STUDENT: [
     { href: '/student',              label: 'Browse Topics' },
-    { href: '/student/preferences',  label: 'My Preferences' },
+    { href: '/student/my-thesis',    label: 'My Thesis' },
     { href: '/student/result',       label: 'My Result' },
     { href: '/student/progress',     label: 'Thesis Progress' },
   ],
   LECTURER: [
-    { href: '/lecturer',            label: 'My Topics' },
-    { href: '/lecturer/students',   label: 'My Students' },
-    { href: '/lecturer/topics/new', label: 'Add Topic' },
-    { href: '/lecturer/import',     label: 'Import Previous' },
+    { href: '/lecturer/topics/new',           label: 'Add Topic' },
+    { href: '/lecturer',                      label: 'My Topics' },
+    { href: '/lecturer/own-topic-requests',   label: 'Topic Requests' },
+    { href: '/lecturer/students',             label: 'My Students' },
+    { href: '/lecturer/import',               label: 'Import Previous' },
   ],
   ADMIN: [
-    { href: '/admin',              label: 'Dashboard' },
-    { href: '/admin/semesters',    label: 'Semesters' },
-    { href: '/admin/topics',       label: 'Topics' },
-    { href: '/admin/students',     label: 'Students' },
-    { href: '/admin/matching',     label: 'Matching' },
-    { href: '/admin/users',        label: 'Users' },
+    { href: '/admin',                     label: 'Dashboard' },
+    { href: '/admin/semesters',           label: 'Semesters' },
+    { href: '/admin/topics',              label: 'Topics' },
+    { href: '/admin/students',            label: 'Students' },
+    { href: '/admin/matching',            label: 'Matching' },
+    { href: '/admin/own-topic-requests',  label: 'Topic Requests' },
+    { href: '/admin/users',               label: 'Users' },
   ],
 }
 

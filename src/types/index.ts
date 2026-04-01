@@ -105,7 +105,8 @@ export interface TopicWithCount {
   lecturerId: string
   lecturerName: string
   preferenceCount: number  // how many students currently have this in preferences
-  availableSlots: number   // maxStudents - preferenceCount
+  matchCount?: number      // how many students are confirmed-matched to this topic
+  availableSlots: number   // maxStudents - max(matchCount, preferenceCount)
   createdAt: string
 }
 

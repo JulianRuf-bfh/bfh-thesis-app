@@ -13,7 +13,7 @@ const buckets = new Map<string, RateLimitEntry>()
 // Clean up expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now()
-  for (const [key, entry] of buckets) {
+  for (const [key, entry] of Array.from(buckets)) {
     if (entry.resetAt <= now) buckets.delete(key)
   }
 }, 5 * 60 * 1000)

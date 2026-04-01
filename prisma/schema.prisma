@@ -31,11 +31,17 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  // Supervisor capacity — total students they can supervise across both workflows
+  supervisorCapacity   Int     @default(5)
+
   // Relations
   topics               Topic[]               @relation("LecturerTopics")
   preferences          Preference[]
   match                Match?
   coSupervisedMatches  MatchCoSupervisor[]   @relation("CoSupervisedMatches")
+  // Own-topic workflow relations
+  ownTopicRequest      OwnTopicRequest?      @relation("StudentOwnTopicRequest")
+  ownTopicSupervisorRequests OwnTopicSupervisorRequest[] @relation("LecturerOwnTopicRequests")
 }
 
 model Semester {
@@ -49,9 +55,10 @@ model Semester {
   emailsSent        Boolean  @default(false) // results sent to students/lecturers
   createdAt         DateTime @default(now())
 
-  topics      Topic[]
-  preferences Preference[]
-  matches     Match[]
+  topics           Topic[]
+  preferences      Preference[]
+  matches          Match[]
+  ownTopicRequests OwnTopicRequest[]
 }
 
 model Topic {
@@ -130,14 +137,25 @@ model ThesisProgress {
   matchId             String    @unique
   match               Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
-  proposalSubmitted   Boolean   @default(false)
-  proposalSubmittedAt DateTime?
+  kickoffCompleted             Boolean   @default(false)
+  kickoffCompletedAt           DateTime?
+  kickoffStudentConfirmed      Boolean   @default(false)
+  kickoffStudentConfirmedAt    DateTime?
+
+  proposalSubmitted            Boolean   @default(false)
+  proposalSubmittedAt          DateTime?
+  proposalMeetingCompleted     Boolean   @default(false)
+  proposalMeetingCompletedAt   DateTime?
+  proposalMeetingStudentConfirmed   Boolean   @default(false)
+  proposalMeetingStudentConfirmedAt DateTime?
   proposalApproved    Boolean   @default(false)
   proposalApprovedAt  DateTime?
+  proposalFeedback    String?
   midtermSubmitted    Boolean   @default(false)
   midtermSubmittedAt  DateTime?
   midtermApproved     Boolean   @default(false)
   midtermApprovedAt   DateTime?
+  midtermFeedback     String?
 
   notifyOnUpload      Boolean   @default(false)
 
@@ -177,8 +195,9 @@ model ThesisGrading {
   // JSON: { "S1": { "score": 5.0, "comment": "" }, ... }
   gradingJson String   @default("{}")
   // JSON: { "LG_1_1": [1, 2, 0, 1], ... }
-  aolJson     String   @default("{}")
-  updatedAt   DateTime @updatedAt
+  aolJson     String    @default("{}")
+  submittedAt DateTime?
+  updatedAt   DateTime  @updatedAt
 }
 
 model ThesisFile {
@@ -192,4 +211,57 @@ model ThesisFile {
   size            Int?
   seenByLecturer  Boolean  @default(false)
   uploadedAt      DateTime @default(now())
+}
+
+// ─── Own-Topic ("Eigenes Thema") workflow ────────────────────────────────────
+// Parallel path: student proposes their own topic and solicits a supervisor.
+// Unlike the preference/matching path, this is student-initiated and
+// supervisor-approved, not algorithm-driven.
+
+model OwnTopicRequest {
+  id          String   @id @default(cuid())
+  // One proposal per student per semester (unique per student — they can update it until submitted)
+  studentId   String   @unique
+  student     User     @relation("StudentOwnTopicRequest", fields: [studentId], references: [id], onDelete: Cascade)
+  semesterId  String
+  semester    Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  // Topic details provided by the student
+  title       String
+  description String?
+  method      String   // mirrors Topic.method values
+  language    String   // mirrors Topic.language values
+
+  // Lifecycle: DRAFT → SUBMITTED → MATCHED | WITHDRAWN
+  // DRAFT: student is still editing, no requests sent yet
+  // SUBMITTED: at least one supervisor request sent
+  // MATCHED: a supervisor accepted → Match record created
+  // WITHDRAWN: student withdrew the proposal
+  status      String   @default("DRAFT")
+
+  supervisorRequests OwnTopicSupervisorRequest[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OwnTopicSupervisorRequest {
+  id                String          @id @default(cuid())
+  ownTopicRequestId String
+  ownTopicRequest   OwnTopicRequest @relation(fields: [ownTopicRequestId], references: [id], onDelete: Cascade)
+  lecturerId        String
+  lecturer          User            @relation("LecturerOwnTopicRequests", fields: [lecturerId], references: [id], onDelete: Cascade)
+
+  // PENDING → ACCEPTED | REJECTED | WITHDRAWN (student withdrew before response)
+  status            String   @default("PENDING")
+  // Supervisor flags whether the topic fits the student's programme/specialisation
+  specialisationFit Boolean?
+  // Optional note from supervisor explaining acceptance or rejection
+  responseNote      String?
+  respondedAt       DateTime?
+
+  createdAt DateTime @default(now())
+
+  // A student can only request the same supervisor once per proposal
+  @@unique([ownTopicRequestId, lecturerId])
 }

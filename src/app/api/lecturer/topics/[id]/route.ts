@@ -73,6 +73,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Lecturers cannot delete topics after matching has run (admins can)
+  if (session!.user.role !== 'ADMIN') {
+    const semester = await prisma.semester.findUnique({ where: { id: topic.semesterId } })
+    if (semester?.matchingRun) {
+      return NextResponse.json({ error: 'Matching has already been run — topics are locked' }, { status: 400 })
+    }
+  }
+
   await prisma.topic.update({
     where: { id: params.id },
     data: { isActive: false },

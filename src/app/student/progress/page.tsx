@@ -12,10 +12,16 @@ type FileRecord = {
 const MAX_UPLOADS = 2
 
 type Progress = {
-  proposalSubmitted:   boolean; proposalSubmittedAt:   string | null
+  kickoffCompleted:              boolean; kickoffCompletedAt:              string | null
+  kickoffStudentConfirmed:       boolean; kickoffStudentConfirmedAt:       string | null
+  proposalSubmitted:             boolean; proposalSubmittedAt:             string | null
+  proposalMeetingCompleted:      boolean; proposalMeetingCompletedAt:      string | null
+  proposalMeetingStudentConfirmed: boolean; proposalMeetingStudentConfirmedAt: string | null
   proposalApproved:    boolean; proposalApprovedAt:    string | null
+  proposalFeedback:    string | null
   midtermSubmitted:    boolean; midtermSubmittedAt:    string | null
   midtermApproved:     boolean; midtermApprovedAt:     string | null
+  midtermFeedback:     string | null
   proposalRejected:    boolean; proposalRejectedAt:    string | null
   midtermRejected:     boolean; midtermRejectedAt:     string | null
   notifyOnUpload:      boolean
@@ -32,21 +38,29 @@ type Progress = {
 }
 
 const MILESTONES = [
-  { key: 'proposalSubmitted'          as const, dateKey: 'proposalSubmittedAt'          as const, countKey: 'proposalUploadCount'          as const, rejKey: 'proposalRejected'          as const, label: 'Proposal hand in',                    by: 'student',  desc: 'Upload your written thesis proposal.' },
-  { key: 'proposalApproved'           as const, dateKey: 'proposalApprovedAt'           as const, countKey: null,                                     rejKey: null,                                  label: 'Proposal approved',                  by: 'lecturer', desc: 'Your supervisor reviews and approves the proposal.' },
-  { key: 'midtermSubmitted'           as const, dateKey: 'midtermSubmittedAt'           as const, countKey: 'midtermUploadCount'           as const, rejKey: 'midtermRejected'           as const, label: 'Midterm presentation',                by: 'student',  desc: 'Upload materials / evidence of your midterm presentation.' },
-  { key: 'midtermApproved'            as const, dateKey: 'midtermApprovedAt'            as const, countKey: null,                                     rejKey: null,                                  label: 'Midterm presentation approved',      by: 'lecturer', desc: 'Your supervisor confirms the midterm presentation was completed.' },
-  { key: 'finalThesisSubmitted'       as const, dateKey: 'finalThesisSubmittedAt'       as const, countKey: 'finalThesisUploadCount'       as const, rejKey: 'finalThesisRejected'       as const, label: 'Final Thesis',                        by: 'student',  desc: 'Upload your completed final thesis document.' },
-  { key: 'finalThesisApproved'        as const, dateKey: 'finalThesisApprovedAt'        as const, countKey: null,                                     rejKey: null,                                  label: 'Final Thesis approved',              by: 'lecturer', desc: 'Your supervisor confirms receipt of the final thesis.' },
-  { key: 'finalPresentationSubmitted' as const, dateKey: 'finalPresentationSubmittedAt' as const, countKey: 'finalPresentationUploadCount' as const, rejKey: 'finalPresentationRejected' as const, label: 'Final Presentation',                  by: 'student',  desc: 'Upload materials from your final thesis presentation.' },
-  { key: 'finalPresentationApproved'  as const, dateKey: 'finalPresentationApprovedAt'  as const, countKey: null,                                     rejKey: null,                                  label: 'Final Presentation approved',        by: 'lecturer', desc: 'Your supervisor confirms the final presentation was completed.' },
+  { key: 'kickoffCompleted'                as const, dateKey: 'kickoffCompletedAt'                as const, countKey: null,                             rejKey: null,                            confirmOnly: false, label: 'Kick-off thesis process', by: 'lecturer', desc: 'Your supervisor officially kicks off the thesis process with you.' },
+  { key: 'kickoffStudentConfirmed'         as const, dateKey: 'kickoffStudentConfirmedAt'         as const, countKey: null,                             rejKey: null,                            confirmOnly: true,  label: 'Kick-off thesis process', by: 'student',  desc: 'Confirm you have attended the kick-off meeting.' },
+  { key: 'proposalSubmitted'               as const, dateKey: 'proposalSubmittedAt'               as const, countKey: 'proposalUploadCount' as const,   rejKey: 'proposalRejected' as const,     confirmOnly: false, label: 'Proposal hand in',        by: 'student',  desc: 'Upload your written thesis proposal.' },
+  { key: 'proposalMeetingCompleted'        as const, dateKey: 'proposalMeetingCompletedAt'        as const, countKey: null,                             rejKey: null,                            confirmOnly: false, label: 'Proposal meeting',        by: 'lecturer', desc: 'Your supervisor confirms the proposal meeting has taken place.' },
+  { key: 'proposalMeetingStudentConfirmed' as const, dateKey: 'proposalMeetingStudentConfirmedAt' as const, countKey: null,                             rejKey: null,                            confirmOnly: true,  label: 'Proposal meeting',        by: 'student',  desc: 'Confirm you have attended the proposal meeting.' },
+  { key: 'proposalApproved'               as const, dateKey: 'proposalApprovedAt'               as const, countKey: null,                             rejKey: null,                            confirmOnly: false, label: 'Proposal approved',       by: 'lecturer', desc: 'Your supervisor reviews and approves the proposal.' },
+  { key: 'midtermSubmitted'               as const, dateKey: 'midtermSubmittedAt'               as const, countKey: 'midtermUploadCount' as const,     rejKey: 'midtermRejected' as const,      confirmOnly: false, label: 'Midterm presentation',    by: 'student',  desc: 'Upload materials / evidence of your midterm presentation.' },
+  { key: 'midtermApproved'               as const, dateKey: 'midtermApprovedAt'               as const, countKey: null,                             rejKey: null,                            confirmOnly: false, label: 'Midterm presentation approved', by: 'lecturer', desc: 'Your supervisor confirms the midterm presentation was completed.' },
+  { key: 'finalThesisSubmitted'          as const, dateKey: 'finalThesisSubmittedAt'          as const, countKey: 'finalThesisUploadCount' as const,  rejKey: 'finalThesisRejected' as const,  confirmOnly: false, label: 'Final Thesis',            by: 'student',  desc: 'Upload your completed final thesis document.' },
+  { key: 'finalThesisApproved'           as const, dateKey: 'finalThesisApprovedAt'           as const, countKey: null,                             rejKey: null,                            confirmOnly: false, label: 'Final Thesis approved',   by: 'lecturer', desc: 'Your supervisor confirms receipt of the final thesis.' },
+  { key: 'finalPresentationSubmitted'    as const, dateKey: 'finalPresentationSubmittedAt'    as const, countKey: 'finalPresentationUploadCount' as const, rejKey: 'finalPresentationRejected' as const, confirmOnly: false, label: 'Final Presentation', by: 'student', desc: 'Upload materials from your final thesis presentation.' },
+  { key: 'finalPresentationApproved'     as const, dateKey: 'finalPresentationApprovedAt'     as const, countKey: null,                             rejKey: null,                            confirmOnly: false, label: 'Final Presentation approved', by: 'lecturer', desc: 'Your supervisor confirms the final presentation was completed.' },
 ] as const
 
 const EMPTY_PROGRESS: Progress = {
+  kickoffCompleted:  false, kickoffCompletedAt:  null,
+  kickoffStudentConfirmed: false, kickoffStudentConfirmedAt: null,
   proposalSubmitted: false, proposalSubmittedAt: null,
-  proposalApproved:  false, proposalApprovedAt:  null,
+  proposalMeetingCompleted: false, proposalMeetingCompletedAt: null,
+  proposalMeetingStudentConfirmed: false, proposalMeetingStudentConfirmedAt: null,
+  proposalApproved:  false, proposalApprovedAt:  null, proposalFeedback: null,
   midtermSubmitted:  false, midtermSubmittedAt:  null,
-  midtermApproved:   false, midtermApprovedAt:   null,
+  midtermApproved:   false, midtermApprovedAt:   null, midtermFeedback: null,
   proposalRejected:  false, proposalRejectedAt:  null,
   midtermRejected:   false, midtermRejectedAt:   null,
   notifyOnUpload: false,
@@ -76,8 +90,9 @@ export default function StudentProgressPage() {
   const [files, setFiles]         = useState<FileRecord[]>([])
   const [loading, setLoading]     = useState(true)
   const [noMatch, setNoMatch]     = useState(false)
-  const [uploading, setUploading] = useState<string | null>(null)
-  const [deleting, setDeleting]   = useState<string | null>(null)
+  const [uploading, setUploading]   = useState<string | null>(null)
+  const [confirming, setConfirming] = useState<string | null>(null)
+  const [deleting, setDeleting]     = useState<string | null>(null)
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const fetchData = async () => {
@@ -104,6 +119,18 @@ export default function StudentProgressPage() {
     await fetch(`/api/progress/${matchId}/upload`, { method: 'POST', body: form })
     await fetchData()
     setUploading(null)
+  }
+
+  const handleConfirm = async (key: string) => {
+    if (!matchId) return
+    setConfirming(key)
+    await fetch(`/api/progress/${matchId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: true }),
+    })
+    await fetchData()
+    setConfirming(null)
   }
 
   const handleDelete = async (fileId: string) => {
@@ -157,11 +184,13 @@ export default function StudentProgressPage() {
             const prevDone    = i === 0 || progress[MILESTONES[i - 1].key]
             const milestoneFiles = files.filter(f => f.milestone === m.key)
             const isUploading    = uploading === m.key
+            const isConfirming  = confirming === m.key
             const uploadCount  = (m.countKey && progress[m.countKey]) ?? 0
             const isRejected   = (m.rejKey && progress[m.rejKey]) ?? false
             const nextApproved = MILESTONES[i + 1] ? progress[MILESTONES[i + 1].key] : false
-            const limitReached = isStudent && uploadCount >= MAX_UPLOADS && !isRejected
-            const canUpload    = isStudent && prevDone && !nextApproved && (uploadCount < MAX_UPLOADS || isRejected)
+            const limitReached = isStudent && !m.confirmOnly && uploadCount >= MAX_UPLOADS && !isRejected
+            const canUpload    = isStudent && !m.confirmOnly && prevDone && !nextApproved && (uploadCount < MAX_UPLOADS || isRejected)
+            const canConfirm   = isStudent && m.confirmOnly && prevDone && !done
 
             return (
               <div key={m.key} className={`rounded-lg border transition-colors ${
@@ -212,8 +241,29 @@ export default function StudentProgressPage() {
                     {!isRejected && limitReached && !nextApproved && (
                       <p className="text-xs text-red-600 mt-1 font-medium">Upload limit reached — no further changes allowed.</p>
                     )}
+                    {m.key === 'proposalApproved' && progress.proposalFeedback && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider mb-0.5">Supervisor feedback</p>
+                        <p className="text-xs text-blue-900 leading-relaxed whitespace-pre-wrap">{progress.proposalFeedback}</p>
+                      </div>
+                    )}
+                    {m.key === 'midtermApproved' && progress.midtermFeedback && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider mb-0.5">Supervisor feedback</p>
+                        <p className="text-xs text-blue-900 leading-relaxed whitespace-pre-wrap">{progress.midtermFeedback}</p>
+                      </div>
+                    )}
                   </div>
 
+                  {canConfirm && (
+                    <button
+                      disabled={isConfirming}
+                      onClick={() => handleConfirm(m.key)}
+                      className="shrink-0 text-xs px-3 py-1.5 rounded font-medium btn-primary disabled:opacity-50 transition-colors"
+                    >
+                      {isConfirming ? 'Confirming…' : '✓ Confirm'}
+                    </button>
+                  )}
                   {canUpload && (
                     <>
                       <input

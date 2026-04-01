@@ -19,10 +19,14 @@ export async function GET(_req: Request, { params }: { params: { matchId: string
 
   return NextResponse.json({
     progress: match.progress ?? {
+      kickoffCompleted: false, kickoffCompletedAt: null,
+      kickoffStudentConfirmed: false, kickoffStudentConfirmedAt: null,
       proposalSubmitted: false, proposalSubmittedAt: null,
-      proposalApproved: false,  proposalApprovedAt: null,
+      proposalMeetingCompleted: false, proposalMeetingCompletedAt: null,
+      proposalMeetingStudentConfirmed: false, proposalMeetingStudentConfirmedAt: null,
+      proposalApproved: false,  proposalApprovedAt: null, proposalFeedback: null,
       midtermSubmitted: false,  midtermSubmittedAt: null,
-      midtermApproved: false,   midtermApprovedAt: null,
+      midtermApproved: false,   midtermApprovedAt: null, midtermFeedback: null,
       proposalRejected: false,  proposalRejectedAt: null,
       midtermRejected:  false,  midtermRejectedAt:  null,
       notifyOnUpload: false,
@@ -52,26 +56,38 @@ export async function PATCH(req: Request, { params }: { params: { matchId: strin
   const match = await prisma.match.findUnique({ where: { id: params.matchId } })
   if (!match) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const allowedFields: Record<string, string[]> = {
-    STUDENT:  ['proposalSubmitted', 'midtermSubmitted', 'finalThesisSubmitted', 'finalPresentationSubmitted'],
-    LECTURER: ['proposalApproved', 'midtermApproved', 'proposalRejected', 'midtermRejected',
+  const allowedBoolFields: Record<string, string[]> = {
+    STUDENT:  ['kickoffStudentConfirmed', 'proposalSubmitted', 'proposalMeetingStudentConfirmed',
+               'midtermSubmitted', 'finalThesisSubmitted', 'finalPresentationSubmitted'],
+    LECTURER: ['kickoffCompleted', 'proposalApproved', 'proposalMeetingCompleted', 'midtermApproved',
+               'proposalRejected', 'midtermRejected',
                'finalThesisApproved', 'finalThesisRejected', 'finalPresentationApproved', 'finalPresentationRejected', 'notifyOnUpload'],
-    ADMIN:    ['proposalSubmitted', 'proposalApproved', 'midtermSubmitted', 'midtermApproved', 'proposalRejected', 'midtermRejected',
+    ADMIN:    ['kickoffCompleted', 'kickoffStudentConfirmed',
+               'proposalSubmitted', 'proposalMeetingCompleted', 'proposalMeetingStudentConfirmed',
+               'proposalApproved', 'midtermSubmitted', 'midtermApproved',
+               'proposalRejected', 'midtermRejected',
                'finalThesisSubmitted', 'finalThesisApproved', 'finalThesisRejected',
                'finalPresentationSubmitted', 'finalPresentationApproved', 'finalPresentationRejected', 'notifyOnUpload'],
   }
+  const allowedStrFields: Record<string, string[]> = {
+    LECTURER: ['proposalFeedback', 'midtermFeedback'],
+    ADMIN:    ['proposalFeedback', 'midtermFeedback'],
+  }
 
   const body = await req.json()
-  const allowed = allowedFields[session.user.role] ?? []
-  const data: Record<string, boolean | Date | null> = {}
+  const data: Record<string, boolean | string | Date | null> = {}
 
-  for (const field of allowed) {
+  for (const field of allowedBoolFields[session.user.role] ?? []) {
     if (field in body) {
       data[field] = body[field]
-      if (field === 'proposalSubmitted')  data.proposalSubmittedAt  = body[field] ? new Date() : null
-      if (field === 'proposalApproved')   data.proposalApprovedAt   = body[field] ? new Date() : null
-      if (field === 'midtermSubmitted')   data.midtermSubmittedAt   = body[field] ? new Date() : null
-      if (field === 'midtermApproved')    data.midtermApprovedAt    = body[field] ? new Date() : null
+      if (field === 'kickoffCompleted')                  data.kickoffCompletedAt                  = body[field] ? new Date() : null
+      if (field === 'kickoffStudentConfirmed')           data.kickoffStudentConfirmedAt           = body[field] ? new Date() : null
+      if (field === 'proposalSubmitted')                 data.proposalSubmittedAt                 = body[field] ? new Date() : null
+      if (field === 'proposalMeetingCompleted')          data.proposalMeetingCompletedAt          = body[field] ? new Date() : null
+      if (field === 'proposalMeetingStudentConfirmed')   data.proposalMeetingStudentConfirmedAt   = body[field] ? new Date() : null
+      if (field === 'proposalApproved')             data.proposalApprovedAt             = body[field] ? new Date() : null
+      if (field === 'midtermSubmitted')             data.midtermSubmittedAt             = body[field] ? new Date() : null
+      if (field === 'midtermApproved')              data.midtermApprovedAt              = body[field] ? new Date() : null
       if (field === 'proposalRejected')             data.proposalRejectedAt             = body[field] ? new Date() : null
       if (field === 'midtermRejected')              data.midtermRejectedAt              = body[field] ? new Date() : null
       if (field === 'finalThesisSubmitted')         data.finalThesisSubmittedAt         = body[field] ? new Date() : null
@@ -80,8 +96,10 @@ export async function PATCH(req: Request, { params }: { params: { matchId: strin
       if (field === 'finalPresentationSubmitted')   data.finalPresentationSubmittedAt   = body[field] ? new Date() : null
       if (field === 'finalPresentationApproved')    data.finalPresentationApprovedAt    = body[field] ? new Date() : null
       if (field === 'finalPresentationRejected')    data.finalPresentationRejectedAt    = body[field] ? new Date() : null
-      // notifyOnUpload is a plain boolean — no timestamp needed
     }
+  }
+  for (const field of allowedStrFields[session.user.role] ?? []) {
+    if (field in body) data[field] = body[field] ?? null
   }
 
   if (Object.keys(data).length === 0) {

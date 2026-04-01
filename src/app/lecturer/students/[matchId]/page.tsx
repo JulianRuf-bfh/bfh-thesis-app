@@ -12,10 +12,16 @@ type FileRecord = {
 }
 
 type Progress = {
-  proposalSubmitted:   boolean; proposalSubmittedAt:   string | null
+  kickoffCompleted:              boolean; kickoffCompletedAt:              string | null
+  kickoffStudentConfirmed:       boolean; kickoffStudentConfirmedAt:       string | null
+  proposalSubmitted:             boolean; proposalSubmittedAt:             string | null
+  proposalMeetingCompleted:      boolean; proposalMeetingCompletedAt:      string | null
+  proposalMeetingStudentConfirmed: boolean; proposalMeetingStudentConfirmedAt: string | null
   proposalApproved:    boolean; proposalApprovedAt:    string | null
+  proposalFeedback:    string | null
   midtermSubmitted:    boolean; midtermSubmittedAt:    string | null
   midtermApproved:     boolean; midtermApprovedAt:     string | null
+  midtermFeedback:     string | null
   proposalRejected:    boolean; proposalRejectedAt:    string | null
   midtermRejected:     boolean; midtermRejectedAt:     string | null
   notifyOnUpload:      boolean
@@ -31,21 +37,29 @@ type CoSupervisor = { id: string; name: string; email: string; addedAt: string }
 type LecturerResult = { id: string; name: string; email: string }
 
 const MILESTONES = [
-  { key: 'proposalSubmitted'          as const, dateKey: 'proposalSubmittedAt'          as const, label: 'Proposal hand in',                by: 'student',  desc: 'Student uploads their written thesis proposal.' },
-  { key: 'proposalApproved'           as const, dateKey: 'proposalApprovedAt'           as const, label: 'Proposal approved',               by: 'lecturer', desc: 'Approve the proposal to allow the student to proceed.' },
-  { key: 'midtermSubmitted'           as const, dateKey: 'midtermSubmittedAt'           as const, label: 'Midterm presentation',            by: 'student',  desc: 'Student uploads materials from their midterm presentation.' },
-  { key: 'midtermApproved'            as const, dateKey: 'midtermApprovedAt'            as const, label: 'Midterm presentation approved',   by: 'lecturer', desc: 'Confirm that the midterm presentation was completed successfully.' },
-  { key: 'finalThesisSubmitted'       as const, dateKey: 'finalThesisSubmittedAt'       as const, label: 'Final Thesis',                    by: 'student',  desc: 'Student uploads their completed final thesis.' },
-  { key: 'finalThesisApproved'        as const, dateKey: 'finalThesisApprovedAt'        as const, label: 'Final Thesis approved',           by: 'lecturer', desc: 'Confirm receipt of the final thesis.' },
-  { key: 'finalPresentationSubmitted' as const, dateKey: 'finalPresentationSubmittedAt' as const, label: 'Final Presentation',              by: 'student',  desc: 'Student uploads materials from their final presentation.' },
-  { key: 'finalPresentationApproved'  as const, dateKey: 'finalPresentationApprovedAt'  as const, label: 'Final Presentation approved',     by: 'lecturer', desc: 'Confirm the final presentation was completed successfully.' },
+  { key: 'kickoffCompleted'                as const, dateKey: 'kickoffCompletedAt'                as const, label: 'Kick-off thesis process',        by: 'lecturer', desc: 'Confirm the kick-off meeting with the student has taken place.' },
+  { key: 'kickoffStudentConfirmed'         as const, dateKey: 'kickoffStudentConfirmedAt'         as const, label: 'Kick-off thesis process',        by: 'student',  desc: 'Student confirms they attended the kick-off meeting.' },
+  { key: 'proposalSubmitted'               as const, dateKey: 'proposalSubmittedAt'               as const, label: 'Proposal hand in',               by: 'student',  desc: 'Student uploads their written thesis proposal.' },
+  { key: 'proposalMeetingCompleted'        as const, dateKey: 'proposalMeetingCompletedAt'        as const, label: 'Proposal meeting',               by: 'lecturer', desc: 'Confirm the proposal meeting with the student has taken place.' },
+  { key: 'proposalMeetingStudentConfirmed' as const, dateKey: 'proposalMeetingStudentConfirmedAt' as const, label: 'Proposal meeting',               by: 'student',  desc: 'Student confirms they attended the proposal meeting.' },
+  { key: 'proposalApproved'               as const, dateKey: 'proposalApprovedAt'               as const, label: 'Proposal approved',              by: 'lecturer', desc: 'Approve the proposal to allow the student to proceed.', feedbackKey: 'proposalFeedback' as const },
+  { key: 'midtermSubmitted'               as const, dateKey: 'midtermSubmittedAt'               as const, label: 'Midterm presentation',           by: 'student',  desc: 'Student uploads materials from their midterm presentation.' },
+  { key: 'midtermApproved'               as const, dateKey: 'midtermApprovedAt'               as const, label: 'Midterm presentation approved',  by: 'lecturer', desc: 'Confirm that the midterm presentation was completed successfully.', feedbackKey: 'midtermFeedback' as const },
+  { key: 'finalThesisSubmitted'          as const, dateKey: 'finalThesisSubmittedAt'          as const, label: 'Final Thesis',                   by: 'student',  desc: 'Student uploads their completed final thesis.' },
+  { key: 'finalThesisApproved'           as const, dateKey: 'finalThesisApprovedAt'           as const, label: 'Final Thesis approved',          by: 'lecturer', desc: 'Confirm receipt of the final thesis.' },
+  { key: 'finalPresentationSubmitted'    as const, dateKey: 'finalPresentationSubmittedAt'    as const, label: 'Final Presentation',             by: 'student',  desc: 'Student uploads materials from their final presentation.' },
+  { key: 'finalPresentationApproved'     as const, dateKey: 'finalPresentationApprovedAt'     as const, label: 'Final Presentation approved',    by: 'lecturer', desc: 'Confirm the final presentation was completed successfully.' },
 ] as const
 
 const EMPTY_PROGRESS: Progress = {
+  kickoffCompleted: false, kickoffCompletedAt: null,
+  kickoffStudentConfirmed: false, kickoffStudentConfirmedAt: null,
   proposalSubmitted: false, proposalSubmittedAt: null,
-  proposalApproved:  false, proposalApprovedAt:  null,
+  proposalMeetingCompleted: false, proposalMeetingCompletedAt: null,
+  proposalMeetingStudentConfirmed: false, proposalMeetingStudentConfirmedAt: null,
+  proposalApproved:  false, proposalApprovedAt:  null, proposalFeedback: null,
   midtermSubmitted:  false, midtermSubmittedAt:  null,
-  midtermApproved:   false, midtermApprovedAt:   null,
+  midtermApproved:   false, midtermApprovedAt:   null, midtermFeedback: null,
   proposalRejected:  false, proposalRejectedAt:  null,
   midtermRejected:   false, midtermRejectedAt:   null,
   notifyOnUpload: false,
@@ -82,6 +96,8 @@ export default function LecturerStudentDetailPage() {
   const [loading, setLoading]           = useState(true)
   const [saving, setSaving]             = useState<string | null>(null)
   const [toast, setToast]               = useState<{ msg: string; ok: boolean } | null>(null)
+  const [feedbackDraft, setFeedbackDraft] = useState<Record<string, string>>({})
+  const [savingFeedback, setSavingFeedback] = useState<string | null>(null)
 
   // Co-supervisor state
   const [coSups, setCoSups]         = useState<CoSupervisor[]>([])
@@ -111,9 +127,14 @@ export default function LecturerStudentDetailPage() {
     const found = [...primaryMatches, ...(matchesData?.co ?? [])].find((m: any) => m.id === matchId) ?? null
     setMatch(found ?? null)
     setIsFirst(primaryMatches.some((m: any) => m.id === matchId))
-    setProgress(pd?.progress ?? EMPTY_PROGRESS)
+    const prog = pd?.progress ?? EMPTY_PROGRESS
+    setProgress(prog)
     setFiles(pd?.files ?? [])
     setCoSups(Array.isArray(coData) ? coData : [])
+    setFeedbackDraft({
+      proposalFeedback: prog.proposalFeedback ?? '',
+      midtermFeedback:  prog.midtermFeedback  ?? '',
+    })
     setLoading(false)
 
     // Mark all unseen files as seen
@@ -154,6 +175,22 @@ export default function LecturerStudentDetailPage() {
       showToast('Could not update notification setting', false)
     }
     setSaving(null)
+  }
+
+  const saveFeedback = async (field: 'proposalFeedback' | 'midtermFeedback') => {
+    const text = feedbackDraft[field] ?? ''
+    if (text === (progress[field] ?? '')) return // unchanged
+    setSavingFeedback(field)
+    const res = await fetch(`/api/progress/${matchId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: text || null }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setProgress(updated)
+    }
+    setSavingFeedback(null)
   }
 
   // ── Co-supervisor management ───────────────────────────────────────────────
@@ -363,6 +400,7 @@ export default function LecturerStudentDetailPage() {
             const hasNew      = milestoneFiles.some(f => !f.seenByLecturer)
             const rejKey      = !isLecturer ? REJECTED_KEY[m.key] : null
             const isRejected  = rejKey ? progress[rejKey] : false
+            const feedbackKey = (m as any).feedbackKey as 'proposalFeedback' | 'midtermFeedback' | undefined
 
             return (
               <div key={m.key} className={`rounded-lg border transition-colors ${
@@ -454,6 +492,27 @@ export default function LecturerStudentDetailPage() {
                   )}
                 </div>
 
+                {/* Feedback textarea — for proposal/midterm approval steps */}
+                {feedbackKey && isLecturer && (
+                  <div className="border-t border-bfh-gray-border mx-3 mb-3 pt-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-bfh-gray-mid flex items-center gap-2">
+                      Feedback for student
+                      {savingFeedback === feedbackKey && <span className="text-bfh-gray-mid font-normal normal-case">Saving…</span>}
+                      {savingFeedback !== feedbackKey && feedbackDraft[feedbackKey] === (progress[feedbackKey] ?? '') && feedbackDraft[feedbackKey] && (
+                        <span className="text-green-600 font-normal normal-case">Saved</span>
+                      )}
+                    </label>
+                    <textarea
+                      rows={3}
+                      className="input mt-1 text-xs resize-none"
+                      placeholder="Add feedback or notes for the student…"
+                      value={feedbackDraft[feedbackKey] ?? ''}
+                      onChange={e => setFeedbackDraft(prev => ({ ...prev, [feedbackKey]: e.target.value }))}
+                      onBlur={() => saveFeedback(feedbackKey)}
+                    />
+                  </div>
+                )}
+
                 {/* Uploaded files */}
                 {milestoneFiles.length > 0 && (
                   <div className="border-t border-bfh-gray-border mx-3 mb-3 pt-2 space-y-1.5">
@@ -494,6 +553,7 @@ export default function LecturerStudentDetailPage() {
       <GradingSection
         matchId={matchId}
         studentLevel={match.student.level ?? null}
+        isSupervisor={isFirstSupervisor}
       />
 
       {/* Toast */}

@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id },
     include: {
       lecturer: { select: { id: true, name: true, email: true } },
-      _count: { select: { preferences: true } },
+      _count: { select: { preferences: true, matches: true } },
     },
   })
   if (!topic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -22,7 +22,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     programmes: parseProgrammes(topic.programmes),
     specialisations: parseSpecialisations(topic.specialisations),
     preferenceCount: topic._count.preferences,
-    availableSlots: Math.max(0, topic.maxStudents - topic._count.preferences),
+    matchCount: topic._count.matches,
+    availableSlots: Math.max(0, topic.maxStudents - Math.max(topic._count.matches, topic._count.preferences)),
     lecturerName: topic.lecturer.name,
   })
 }

@@ -3,14 +3,18 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 const MILESTONES = [
-  { key: 'proposalSubmitted',          label: 'Proposal handed in' },
-  { key: 'proposalApproved',           label: 'Proposal approved' },
-  { key: 'midtermSubmitted',           label: 'Midterm presented' },
-  { key: 'midtermApproved',            label: 'Midterm approved' },
-  { key: 'finalThesisSubmitted',       label: 'Final Thesis' },
-  { key: 'finalThesisApproved',        label: 'Final Thesis approved' },
-  { key: 'finalPresentationSubmitted', label: 'Final Presentation' },
-  { key: 'finalPresentationApproved',  label: 'Final Presentation approved' },
+  { key: 'kickoffCompleted',                  label: 'Kick-off thesis process (lecturer)' },
+  { key: 'kickoffStudentConfirmed',            label: 'Kick-off thesis process (student)' },
+  { key: 'proposalSubmitted',                  label: 'Proposal handed in' },
+  { key: 'proposalMeetingCompleted',           label: 'Proposal meeting (lecturer)' },
+  { key: 'proposalMeetingStudentConfirmed',    label: 'Proposal meeting (student)' },
+  { key: 'proposalApproved',                   label: 'Proposal approved' },
+  { key: 'midtermSubmitted',                   label: 'Midterm presented' },
+  { key: 'midtermApproved',                    label: 'Midterm approved' },
+  { key: 'finalThesisSubmitted',               label: 'Final Thesis' },
+  { key: 'finalThesisApproved',                label: 'Final Thesis approved' },
+  { key: 'finalPresentationSubmitted',         label: 'Final Presentation' },
+  { key: 'finalPresentationApproved',          label: 'Final Presentation approved' },
 ] as const
 
 function ProgressDots({ progress }: { progress: any }) {

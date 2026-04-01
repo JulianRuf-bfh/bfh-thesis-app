@@ -23,7 +23,7 @@ export async function GET() {
       topic: {
         include: {
           lecturer: { select: { name: true } },
-          _count: { select: { preferences: true } },
+          _count: { select: { preferences: true, matches: true } },
         },
       },
     },
@@ -48,7 +48,8 @@ export async function GET() {
       lecturerId: p.topic.lecturerId,
       lecturerName: p.topic.lecturer.name,
       preferenceCount: p.topic._count.preferences,
-      availableSlots: Math.max(0, p.topic.maxStudents - p.topic._count.preferences),
+      matchCount: p.topic._count.matches,
+      availableSlots: Math.max(0, p.topic.maxStudents - Math.max(p.topic._count.matches, p.topic._count.preferences)),
       createdAt: p.topic.createdAt.toISOString(),
     },
   })))
@@ -75,6 +76,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Submission deadline has passed' }, { status: 400 })
   }
 
+  // Block once matching has been run
+  if (semester.matchingRun) {
+    return NextResponse.json({ error: 'Matching has already been run — preferences are locked' }, { status: 400 })
+  }
+
   // Check current count
   const existing = await prisma.preference.count({
     where: { studentId: session.user.id, semesterId: semester.id },
@@ -89,13 +95,16 @@ export async function POST(req: NextRequest) {
   })
   if (dupe) return NextResponse.json({ error: 'Already in preferences' }, { status: 400 })
 
-  // Check topic availability
+  // Check topic availability — block if matches OR preferences have filled all slots
   const topic = await prisma.topic.findUnique({
     where: { id: topicId },
-    include: { _count: { select: { preferences: true } } },
+    include: { _count: { select: { preferences: true, matches: true } } },
   })
   if (!topic || !topic.isActive) {
     return NextResponse.json({ error: 'Topic not found or inactive' }, { status: 400 })
+  }
+  if (topic._count.matches >= topic.maxStudents) {
+    return NextResponse.json({ error: 'Topic is full' }, { status: 400 })
   }
   if (topic._count.preferences >= topic.maxStudents) {
     return NextResponse.json({ error: 'Topic is full' }, { status: 400 })
@@ -134,6 +143,9 @@ export async function PUT(req: NextRequest) {
 
   if (new Date() > semester.studentDeadline) {
     return NextResponse.json({ error: 'Deadline has passed' }, { status: 400 })
+  }
+  if (semester.matchingRun) {
+    return NextResponse.json({ error: 'Matching has already been run — preferences are locked' }, { status: 400 })
   }
 
   // Two-phase update to avoid unique constraint violations on (studentId, rank, semesterId):
@@ -174,6 +186,9 @@ export async function DELETE(req: NextRequest) {
 
   if (new Date() > semester.studentDeadline) {
     return NextResponse.json({ error: 'Deadline has passed' }, { status: 400 })
+  }
+  if (semester.matchingRun) {
+    return NextResponse.json({ error: 'Matching has already been run — preferences are locked' }, { status: 400 })
   }
 
   // Delete the preference

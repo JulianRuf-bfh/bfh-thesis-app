@@ -22,6 +22,7 @@ type AolMap         = Record<string, (number | null)[]>
 interface GradingSectionProps {
   matchId:      string
   studentLevel: string | null  // 'BACHELOR' | 'MASTER' | null
+  isSupervisor?: boolean       // false for co-supervisors (hides AoL + Submit)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -277,13 +278,15 @@ function AolDimensionCard({
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function GradingSection({ matchId, studentLevel }: GradingSectionProps) {
+export default function GradingSection({ matchId, studentLevel, isSupervisor = true }: GradingSectionProps) {
   const [tab,          setTab]        = useState<'main' | 'aol'>('main')
   const [grading,      setGrading]    = useState<GradingMap>(emptyGradingMap())
   const [aol,          setAol]        = useState<AolMap>(emptyAolMap())
   const [loading,      setLoading]    = useState(true)
   const [saving,       setSaving]     = useState(false)
+  const [submitting,   setSubmitting] = useState(false)
   const [savedAt,      setSavedAt]    = useState<string | null>(null)
+  const [submittedAt,  setSubmittedAt] = useState<string | null>(null)
   const [saveMsg,      setSaveMsg]    = useState<{ text: string; ok: boolean } | null>(null)
   const [openCriteria, setOpenCriteria] = useState<Record<string, boolean>>(
     Object.fromEntries(GRADING_CRITERIA.map(c => [c.id, false]))
@@ -307,6 +310,7 @@ export default function GradingSection({ matchId, studentLevel }: GradingSection
       setGrading(parseGradingJson(data.gradingJson))
       setAol(parseAolJson(data.aolJson))
       setSavedAt(data.updatedAt ?? null)
+      setSubmittedAt(data.submittedAt ?? null)
     }
     setLoading(false)
   }, [matchId])
@@ -315,13 +319,13 @@ export default function GradingSection({ matchId, studentLevel }: GradingSection
 
   const saveGrading = async () => {
     setSaving(true)
+    const body: Record<string, string> = { gradingJson: JSON.stringify(grading) }
+    // Co-supervisors must not overwrite the AoL section (they cannot see it)
+    if (isSupervisor) body.aolJson = JSON.stringify(aol)
     const res = await fetch(`/api/progress/${matchId}/grading`, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        gradingJson: JSON.stringify(grading),
-        aolJson:     JSON.stringify(aol),
-      }),
+      body:    JSON.stringify(body),
     })
     if (res.ok) {
       const data = await res.json()
@@ -332,6 +336,30 @@ export default function GradingSection({ matchId, studentLevel }: GradingSection
     }
     setSaving(false)
     setTimeout(() => setSaveMsg(null), 3000)
+  }
+
+  const submitGrading = async () => {
+    if (!confirm('Submit the final grading? This will mark the assessment as complete and notify the admin.')) return
+    setSubmitting(true)
+    const res = await fetch(`/api/progress/${matchId}/grading`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        gradingJson: JSON.stringify(grading),
+        aolJson:     JSON.stringify(aol),
+        submit:      true,
+      }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setSavedAt(data.updatedAt)
+      setSubmittedAt(data.submittedAt)
+      setSaveMsg({ text: 'Grading submitted successfully', ok: true })
+    } else {
+      setSaveMsg({ text: 'Could not submit grading', ok: false })
+    }
+    setSubmitting(false)
+    setTimeout(() => setSaveMsg(null), 4000)
   }
 
   const updateCriterion = (id: string, entry: CriterionEntry) => {
@@ -369,7 +397,7 @@ export default function GradingSection({ matchId, studentLevel }: GradingSection
 
       {/* Tabs */}
       <div className="flex border-b border-bfh-gray-border">
-        {(['main', 'aol'] as const).map(t => (
+        {(['main', 'aol'] as const).filter(t => t === 'main' || isSupervisor).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -383,6 +411,11 @@ export default function GradingSection({ matchId, studentLevel }: GradingSection
           </button>
         ))}
       </div>
+      {!isSupervisor && (
+        <p className="text-xs text-bfh-gray-mid bg-bfh-gray-light rounded px-3 py-2">
+          You are a co-supervisor. You can edit scores and comments in Main Grading. The AoL Assessment is managed by the main supervisor only.
+        </p>
+      )}
 
       {/* ── Main Grading tab ───────────────────────────────────────────────── */}
       {tab === 'main' && (
@@ -561,26 +594,46 @@ export default function GradingSection({ matchId, studentLevel }: GradingSection
         </div>
       )}
 
-      {/* Save row */}
-      <div className="flex items-center justify-between pt-2 border-t border-bfh-gray-border">
-        <div className="text-xs text-bfh-gray-mid">
-          {savedAt
-            ? `Last saved: ${new Date(savedAt).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })}`
-            : 'Not yet saved'}
-        </div>
-        <div className="flex items-center gap-3">
-          {saveMsg && (
-            <span className={`text-xs font-medium ${saveMsg.ok ? 'text-green-700' : 'text-red-600'}`}>
-              {saveMsg.text}
+      {/* Save / Submit row */}
+      <div className="border-t border-bfh-gray-border pt-3 space-y-2">
+        {submittedAt && (
+          <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+            <span className="text-green-600 text-sm">✓</span>
+            <span className="text-xs text-green-700 font-medium">
+              Grading submitted on {new Date(submittedAt).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })}
             </span>
-          )}
-          <button
-            onClick={saveGrading}
-            disabled={saving}
-            className="btn-primary text-sm disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save Grading'}
-          </button>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-bfh-gray-mid">
+            {savedAt
+              ? `Last saved: ${new Date(savedAt).toLocaleString('de-CH', { dateStyle: 'short', timeStyle: 'short' })}`
+              : 'Not yet saved'}
+          </div>
+          <div className="flex items-center gap-2">
+            {saveMsg && (
+              <span className={`text-xs font-medium ${saveMsg.ok ? 'text-green-700' : 'text-red-600'}`}>
+                {saveMsg.text}
+              </span>
+            )}
+            <button
+              onClick={saveGrading}
+              disabled={saving || submitting}
+              className="btn-secondary text-sm disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save Draft'}
+            </button>
+            {isSupervisor && (
+              <button
+                onClick={submitGrading}
+                disabled={saving || submitting || !grade.allSet}
+                title={!grade.allSet ? 'Score all criteria before submitting' : undefined}
+                className="btn-primary text-sm disabled:opacity-50"
+              >
+                {submitting ? 'Submitting…' : submittedAt ? '✓ Re-submit Grading' : 'Submit Grading'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -128,7 +128,7 @@ export async function sendMatchingEmails(semesterId: string) {
     )
   }
 
-  for (const { lecturerName, lecturerEmail, rows } of byLecturer.values()) {
+  for (const { lecturerName, lecturerEmail, rows } of Array.from(byLecturer.values())) {
     await sendOrLog(
       lecturerEmail,
       `[BFH] Thesis student assignments – ${semester.name}`,
