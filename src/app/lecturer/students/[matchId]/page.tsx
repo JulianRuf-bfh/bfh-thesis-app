@@ -20,10 +20,13 @@ type Progress = {
   proposalApproved:    boolean; proposalApprovedAt:    string | null
   proposalFeedback:    string | null
   midtermSubmitted:    boolean; midtermSubmittedAt:    string | null
+  midtermMeetingCompleted:       boolean; midtermMeetingCompletedAt:       string | null
+  midtermReflectionSubmitted:    boolean; midtermReflectionSubmittedAt:    string | null
+  midtermReflectionRejected:     boolean; midtermReflectionRejectedAt:     string | null
   midtermApproved:     boolean; midtermApprovedAt:     string | null
   midtermFeedback:     string | null
-  proposalRejected:    boolean; proposalRejectedAt:    string | null
   midtermRejected:     boolean; midtermRejectedAt:     string | null
+  proposalRejected:    boolean; proposalRejectedAt:    string | null
   notifyOnUpload:      boolean
   finalThesisSubmitted:   boolean; finalThesisSubmittedAt:   string | null
   finalThesisApproved:    boolean; finalThesisApprovedAt:    string | null
@@ -44,20 +47,26 @@ const PHASES = [
   { id: 4, label: 'Final',     icon: '🎓' },
 ] as const
 
-// ── Milestone definitions (12 steps grouped into 4 phases) ────────────────────
+// ── Milestone definitions (mirrors student page; phase 3 expanded to 4 steps) ─
 const MILESTONES = [
+  // Phase 1 — Kick-off
   { key: 'kickoffCompleted'                as const, dateKey: 'kickoffCompletedAt'                as const, phase: 1, step: 1, label: 'Kick-off meeting',          by: 'lecturer', desc: 'Confirm the kick-off meeting with the student has taken place.', feedbackKey: undefined, rejKey: null },
   { key: 'kickoffStudentConfirmed'         as const, dateKey: 'kickoffStudentConfirmedAt'         as const, phase: 1, step: 2, label: 'Confirm kick-off',           by: 'student',  desc: 'Student confirms they attended the kick-off meeting.', feedbackKey: undefined, rejKey: null },
+  // Phase 2 — Proposal
   { key: 'proposalSubmitted'               as const, dateKey: 'proposalSubmittedAt'               as const, phase: 2, step: 1, label: 'Proposal hand in',           by: 'student',  desc: 'Student uploads their written thesis proposal.', feedbackKey: undefined, rejKey: 'proposalRejected' as const },
   { key: 'proposalMeetingCompleted'        as const, dateKey: 'proposalMeetingCompletedAt'        as const, phase: 2, step: 2, label: 'Proposal meeting',           by: 'lecturer', desc: 'Confirm the proposal meeting with the student has taken place.', feedbackKey: undefined, rejKey: null },
   { key: 'proposalMeetingStudentConfirmed' as const, dateKey: 'proposalMeetingStudentConfirmedAt' as const, phase: 2, step: 3, label: 'Confirm proposal meeting',  by: 'student',  desc: 'Student confirms they attended the proposal meeting.', feedbackKey: undefined, rejKey: null },
-  { key: 'proposalApproved'               as const, dateKey: 'proposalApprovedAt'               as const, phase: 2, step: 4, label: 'Proposal approved',          by: 'lecturer', desc: 'Approve the proposal to allow the student to proceed.', feedbackKey: 'proposalFeedback' as const, rejKey: null },
-  { key: 'midtermSubmitted'               as const, dateKey: 'midtermSubmittedAt'               as const, phase: 3, step: 1, label: 'Midterm presentation',       by: 'student',  desc: 'Student uploads materials from their midterm presentation.', feedbackKey: undefined, rejKey: 'midtermRejected' as const },
-  { key: 'midtermApproved'               as const, dateKey: 'midtermApprovedAt'               as const, phase: 3, step: 2, label: 'Midterm approved',           by: 'lecturer', desc: 'Confirm that the midterm presentation was completed successfully.', feedbackKey: 'midtermFeedback' as const, rejKey: null },
-  { key: 'finalThesisSubmitted'          as const, dateKey: 'finalThesisSubmittedAt'          as const, phase: 4, step: 1, label: 'Final Thesis',               by: 'student',  desc: 'Student uploads their completed final thesis.', feedbackKey: undefined, rejKey: 'finalThesisRejected' as const },
-  { key: 'finalThesisApproved'           as const, dateKey: 'finalThesisApprovedAt'           as const, phase: 4, step: 2, label: 'Final Thesis received',     by: 'lecturer', desc: 'Confirm receipt of the final thesis.', feedbackKey: undefined, rejKey: null },
-  { key: 'finalPresentationSubmitted'    as const, dateKey: 'finalPresentationSubmittedAt'    as const, phase: 4, step: 3, label: 'Final Presentation',         by: 'student',  desc: 'Student uploads materials from their final presentation.', feedbackKey: undefined, rejKey: 'finalPresentationRejected' as const },
-  { key: 'finalPresentationApproved'     as const, dateKey: 'finalPresentationApprovedAt'     as const, phase: 4, step: 4, label: 'Presentation confirmed',    by: 'lecturer', desc: 'Confirm the final presentation was completed successfully.', feedbackKey: undefined, rejKey: null },
+  { key: 'proposalApproved'               as const, dateKey: 'proposalApprovedAt'               as const,  phase: 2, step: 4, label: 'Proposal approved',          by: 'lecturer', desc: 'Approve the proposal to allow the student to proceed.', feedbackKey: 'proposalFeedback' as const, rejKey: null },
+  // Phase 3 — Midterm (4 steps)
+  { key: 'midtermSubmitted'               as const, dateKey: 'midtermSubmittedAt'               as const,  phase: 3, step: 1, label: 'Midterm Materials',          by: 'student',  desc: 'Student uploads both the midterm presentation and the midterm paper.', feedbackKey: undefined, rejKey: 'midtermRejected' as const },
+  { key: 'midtermMeetingCompleted'        as const, dateKey: 'midtermMeetingCompletedAt'        as const,  phase: 3, step: 2, label: 'Midterm Presentation',       by: 'lecturer', desc: 'Confirm the midterm presentation has taken place. Co-supervisors attend and give oral feedback together with you.', feedbackKey: undefined, rejKey: null },
+  { key: 'midtermReflectionSubmitted'     as const, dateKey: 'midtermReflectionSubmittedAt'     as const,  phase: 3, step: 3, label: 'Feedback Reflection',        by: 'student',  desc: 'Student uploads their written reflection of the oral feedback received.', feedbackKey: 'midtermFeedback' as const, rejKey: 'midtermReflectionRejected' as const },
+  { key: 'midtermApproved'               as const, dateKey: 'midtermApprovedAt'               as const,   phase: 3, step: 4, label: 'Midterm Approved',           by: 'lecturer', desc: 'Approve both the midterm materials and the feedback reflection.', feedbackKey: undefined, rejKey: null },
+  // Phase 4 — Final
+  { key: 'finalThesisSubmitted'          as const, dateKey: 'finalThesisSubmittedAt'          as const,   phase: 4, step: 1, label: 'Final Thesis',               by: 'student',  desc: 'Student uploads their completed final thesis.', feedbackKey: undefined, rejKey: 'finalThesisRejected' as const },
+  { key: 'finalThesisApproved'           as const, dateKey: 'finalThesisApprovedAt'           as const,   phase: 4, step: 2, label: 'Final Thesis received',      by: 'lecturer', desc: 'Confirm receipt of the final thesis.', feedbackKey: undefined, rejKey: null },
+  { key: 'finalPresentationSubmitted'    as const, dateKey: 'finalPresentationSubmittedAt'    as const,   phase: 4, step: 3, label: 'Final Presentation',          by: 'student',  desc: 'Student uploads materials from their final presentation.', feedbackKey: undefined, rejKey: 'finalPresentationRejected' as const },
+  { key: 'finalPresentationApproved'     as const, dateKey: 'finalPresentationApprovedAt'     as const,   phase: 4, step: 4, label: 'Presentation confirmed',     by: 'lecturer', desc: 'Confirm the final presentation was completed successfully.', feedbackKey: undefined, rejKey: null },
 ] as const
 
 const EMPTY_PROGRESS: Progress = {
@@ -68,9 +77,12 @@ const EMPTY_PROGRESS: Progress = {
   proposalMeetingStudentConfirmed: false, proposalMeetingStudentConfirmedAt: null,
   proposalApproved:  false, proposalApprovedAt:  null, proposalFeedback: null,
   midtermSubmitted:  false, midtermSubmittedAt:  null,
+  midtermMeetingCompleted: false, midtermMeetingCompletedAt: null,
+  midtermReflectionSubmitted: false, midtermReflectionSubmittedAt: null,
+  midtermReflectionRejected: false, midtermReflectionRejectedAt: null,
   midtermApproved:   false, midtermApprovedAt:   null, midtermFeedback: null,
-  proposalRejected:  false, proposalRejectedAt:  null,
   midtermRejected:   false, midtermRejectedAt:   null,
+  proposalRejected:  false, proposalRejectedAt:  null,
   notifyOnUpload: false,
   finalThesisSubmitted: false,   finalThesisSubmittedAt: null,
   finalThesisApproved:  false,   finalThesisApprovedAt:  null,
@@ -85,6 +97,32 @@ function formatBytes(b: number | null) {
   if (b < 1024)         return `${b} B`
   if (b < 1024 * 1024)  return `${(b / 1024).toFixed(1)} KB`
   return `${(b / 1024 / 1024).toFixed(1)} MB`
+}
+
+/** Renders a single uploaded file row for the lecturer (with download + seen indicator). */
+function FileRow({ f, onDownload }: { f: FileRecord; onDownload: (id: string) => void }) {
+  return (
+    <div className={`flex items-center gap-2 rounded px-2 py-1.5 border ${
+      !f.seenByLecturer ? 'bg-amber-50 border-amber-200' : 'bg-white border-bfh-gray-border'
+    }`}>
+      <span className="text-base">📄</span>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
+        <div className="text-[10px] text-bfh-gray-mid">
+          {formatBytes(f.size)} · {formatDateTime(f.uploadedAt)}
+          {!f.seenByLecturer && <span className="ml-1.5 text-amber-600 font-semibold">New</span>}
+        </div>
+      </div>
+      <a
+        href={`/api/files/${f.matchId}/${f.storedName}`}
+        download={f.originalName}
+        onClick={() => onDownload(f.id)}
+        className="shrink-0 text-xs px-2.5 py-1 rounded bg-bfh-red text-white hover:bg-bfh-red-dark transition-colors"
+      >
+        Download
+      </a>
+    </div>
+  )
 }
 
 export default function LecturerStudentDetailPage() {
@@ -124,7 +162,6 @@ export default function LecturerStudentDetailPage() {
     const [matchesData, pd, coData] = await Promise.all([
       matchesRes.json(), progRes.json(), coRes.json(),
     ])
-    // API returns { primary, co }
     const primaryMatches = matchesData?.primary ?? []
     const found = [...primaryMatches, ...(matchesData?.co ?? [])].find((m: any) => m.id === matchId) ?? null
     setMatch(found ?? null)
@@ -181,7 +218,7 @@ export default function LecturerStudentDetailPage() {
 
   const saveFeedback = async (field: 'proposalFeedback' | 'midtermFeedback') => {
     const text = feedbackDraft[field] ?? ''
-    if (text === (progress[field] ?? '')) return // unchanged
+    if (text === (progress[field] ?? '')) return
     setSavingFeedback(field)
     const res = await fetch(`/api/progress/${matchId}`, {
       method: 'PATCH',
@@ -243,13 +280,15 @@ export default function LecturerStudentDetailPage() {
 
   const completedCount = MILESTONES.filter(m => progress[m.key]).length
 
-  // Group milestones by phase for display
   const milestonesByPhase = PHASES.map(phase => ({
     ...phase,
     milestones: MILESTONES.filter(m => m.phase === phase.id),
-    completed: MILESTONES.filter(m => m.phase === phase.id && progress[m.key]).length,
-    total: MILESTONES.filter(m => m.phase === phase.id).length,
+    completed:  MILESTONES.filter(m => m.phase === phase.id && progress[m.key]).length,
+    total:      MILESTONES.filter(m => m.phase === phase.id).length,
   }))
+
+  const markFileSeen = (id: string) =>
+    setFiles(prev => prev.map(x => x.id === id ? { ...x, seenByLecturer: true } : x))
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -288,7 +327,7 @@ export default function LecturerStudentDetailPage() {
         <div>
           <h2 className="font-semibold text-bfh-gray-dark">Co-Supervisors</h2>
           <p className="text-xs text-bfh-gray-mid mt-0.5">
-            Co-supervisors can view progress and download submissions for this student.
+            Co-supervisors can view progress and download submissions. They attend the midterm presentation and give oral feedback.
           </p>
         </div>
 
@@ -368,7 +407,7 @@ export default function LecturerStudentDetailPage() {
 
       {/* ── Progress tracker ───────────────────────────────────────────────── */}
       <div className="space-y-4">
-        {/* Header row with notification toggle and overall progress */}
+        {/* Header + notification toggle */}
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -377,8 +416,6 @@ export default function LecturerStudentDetailPage() {
                 {completedCount} / {MILESTONES.length} steps
               </span>
             </div>
-
-            {/* Notification toggle */}
             <button
               onClick={() => toggleNotify(progress.notifyOnUpload)}
               disabled={saving === 'notifyOnUpload'}
@@ -445,7 +482,7 @@ export default function LecturerStudentDetailPage() {
                 </span>
               </div>
 
-              {/* Steps within phase */}
+              {/* Steps */}
               <div className="divide-y divide-bfh-gray-border">
                 {phase.milestones.map((m) => {
                   const globalIdx  = MILESTONES.findIndex(x => x.key === m.key)
@@ -454,11 +491,107 @@ export default function LecturerStudentDetailPage() {
                   const isLecturer = m.by === 'lecturer'
                   const isSaving   = saving === m.key
                   const prevDone   = globalIdx === 0 || progress[MILESTONES[globalIdx - 1].key]
-                  const milestoneFiles = files.filter(f => f.milestone === m.key)
-                  const hasNew     = milestoneFiles.some(f => !f.seenByLecturer)
-                  const rejKey     = m.rejKey
-                  const isRejected = rejKey ? progress[rejKey] : false
+                  const isRejected = m.rejKey ? progress[m.rejKey] : false
                   const feedbackKey = m.feedbackKey as 'proposalFeedback' | 'midtermFeedback' | undefined
+
+                  // ── Step 3.1: Midterm Materials — show presentation + paper files separately ──
+                  if (m.key === 'midtermSubmitted') {
+                    const presFiles  = files.filter(f => f.milestone === 'midtermPresentation')
+                    const paperFiles = files.filter(f => f.milestone === 'midtermPaper')
+                    const hasNewPres  = presFiles.some(f => !f.seenByLecturer)
+                    const hasNewPaper = paperFiles.some(f => !f.seenByLecturer)
+                    const nextMilestone = MILESTONES[globalIdx + 1]
+                    const nextApproved  = nextMilestone ? progress[nextMilestone.key] : false
+
+                    return (
+                      <div key={m.key} className={`transition-colors ${
+                        done ? 'bg-green-50/60' : isRejected ? 'bg-red-50' : !prevDone ? 'bg-bfh-gray-light opacity-60' : 'bg-white'
+                      }`}>
+                        <div className="flex items-start gap-3 p-4">
+                          <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 ${
+                            done ? 'bg-green-500 text-white' : isRejected ? 'bg-red-400 text-white' : 'bg-bfh-gray-border text-bfh-gray-mid'
+                          }`}>
+                            {done ? '✓' : isRejected ? '✗' : `${m.phase}.${m.step}`}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`font-semibold text-sm ${done ? 'text-green-800' : isRejected ? 'text-red-700' : 'text-bfh-gray-dark'}`}>
+                                {m.label}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-bfh-yellow text-bfh-gray-dark">Student</span>
+                              {(hasNewPres || hasNewPaper) && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-400 text-white animate-pulse">New upload</span>
+                              )}
+                              {isRejected && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-100 text-red-700 border border-red-200">Rework requested</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-bfh-gray-mid mt-0.5">{m.desc}</p>
+                            {done && dateVal && <p className="text-xs text-green-700 mt-1">✓ Both files submitted — {formatDateTime(dateVal)}</p>}
+                            {isRejected && !done && (
+                              <p className="text-xs text-red-600 mt-1 italic">Waiting for student to re-upload the required files.</p>
+                            )}
+                          </div>
+
+                          {/* Request Rework / Cancel Rework */}
+                          {done && !isRejected && !nextApproved && (
+                            <button
+                              disabled={isSaving}
+                              onClick={() => toggleMilestone('midtermRejected', false)}
+                              className="shrink-0 text-xs px-3 py-1.5 rounded font-medium border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                            >
+                              {isSaving ? '…' : 'Request Rework'}
+                            </button>
+                          )}
+                          {isRejected && (
+                            <button
+                              disabled={isSaving}
+                              onClick={() => toggleMilestone('midtermRejected', true)}
+                              className="shrink-0 text-xs px-3 py-1.5 rounded font-medium text-bfh-gray-mid hover:text-bfh-gray-dark border border-bfh-gray-border bg-white transition-colors disabled:opacity-50"
+                            >
+                              {isSaving ? '…' : 'Cancel'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* File groups: Presentation + Paper */}
+                        {(presFiles.length > 0 || paperFiles.length > 0) && (
+                          <div className="px-4 pb-4 space-y-3">
+                            {/* Presentation files */}
+                            {presFiles.length > 0 && (
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                  🖥️ Presentation Slides
+                                  {hasNewPres && <span className="text-amber-600 font-bold">· New</span>}
+                                </p>
+                                {presFiles.map(f => <FileRow key={f.id} f={f} onDownload={markFileSeen} />)}
+                              </div>
+                            )}
+                            {/* Paper files */}
+                            {paperFiles.length > 0 && (
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                                  📄 Midterm Paper
+                                  {hasNewPaper && <span className="text-amber-600 font-bold">· New</span>}
+                                </p>
+                                {paperFiles.map(f => <FileRow key={f.id} f={f} onDownload={markFileSeen} />)}
+                              </div>
+                            )}
+                            {/* Status reminder if only one type uploaded */}
+                            {!done && !isRejected && (presFiles.length > 0 || paperFiles.length > 0) && !(presFiles.length > 0 && paperFiles.length > 0) && (
+                              <p className="text-xs text-amber-600 font-medium">
+                                ⚠ Waiting for student to upload the {presFiles.length === 0 ? 'presentation slides' : 'midterm paper'}.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  // ── Standard step rendering ─────────────────────────────────
+                  const milestoneFiles = files.filter(f => f.milestone === m.key)
+                  const hasNew = milestoneFiles.some(f => !f.seenByLecturer)
 
                   return (
                     <div key={m.key} className={`transition-colors ${
@@ -468,11 +601,9 @@ export default function LecturerStudentDetailPage() {
                       :              'bg-white'
                     }`}>
                       <div className="flex items-start gap-3 p-4">
-                        {/* Step number badge (phase.step format) */}
+                        {/* Step number badge */}
                         <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 ${
-                          done ? 'bg-green-500 text-white'
-                          : isRejected ? 'bg-red-400 text-white'
-                          : 'bg-bfh-gray-border text-bfh-gray-mid'
+                          done ? 'bg-green-500 text-white' : isRejected ? 'bg-red-400 text-white' : 'bg-bfh-gray-border text-bfh-gray-mid'
                         }`}>
                           {done ? '✓' : isRejected ? '✗' : `${m.phase}.${m.step}`}
                         </div>
@@ -487,15 +618,17 @@ export default function LecturerStudentDetailPage() {
                             }`}>
                               {isLecturer ? 'You' : 'Student'}
                             </span>
-                            {hasNew && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-400 text-white animate-pulse">
-                                New upload
+                            {/* Co-supervisor note on step 3.2 */}
+                            {m.key === 'midtermMeetingCompleted' && coSups.length > 0 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-medium">
+                                + {coSups.length} co-supervisor{coSups.length > 1 ? 's' : ''} attending
                               </span>
                             )}
+                            {hasNew && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-400 text-white animate-pulse">New upload</span>
+                            )}
                             {isRejected && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-100 text-red-700 border border-red-200">
-                                Rework requested
-                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-100 text-red-700 border border-red-200">Rework requested</span>
                             )}
                           </div>
                           <p className="text-xs text-bfh-gray-mid mt-0.5">{m.desc}</p>
@@ -510,28 +643,26 @@ export default function LecturerStudentDetailPage() {
 
                         {/* Approve / Undo — lecturer steps */}
                         {isLecturer && prevDone && (
-                          <div className="flex gap-1.5 shrink-0">
-                            <button
-                              disabled={isSaving}
-                              onClick={() => toggleMilestone(m.key, done)}
-                              className={`text-xs px-3 py-1.5 rounded font-medium transition-colors disabled:opacity-50 ${
-                                done ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'btn-primary text-xs py-1.5'
-                              }`}
-                            >
-                              {isSaving ? '…' : done ? 'Undo' : 'Approve'}
-                            </button>
-                          </div>
+                          <button
+                            disabled={isSaving}
+                            onClick={() => toggleMilestone(m.key, done)}
+                            className={`shrink-0 text-xs px-3 py-1.5 rounded font-medium transition-colors disabled:opacity-50 ${
+                              done ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'btn-primary text-xs py-1.5'
+                            }`}
+                          >
+                            {isSaving ? '…' : done ? 'Undo' : 'Approve'}
+                          </button>
                         )}
 
-                        {/* Request Rework — on student steps when submitted but not yet approved */}
-                        {!isLecturer && done && !isRejected && (() => {
+                        {/* Request Rework — student steps with a rejKey */}
+                        {!isLecturer && done && !isRejected && m.rejKey && (() => {
                           const nextMilestone = MILESTONES[globalIdx + 1]
                           const nextApproved  = nextMilestone ? progress[nextMilestone.key] : false
-                          return !nextApproved && rejKey
+                          return !nextApproved
                         })() && (
                           <button
                             disabled={isSaving}
-                            onClick={() => toggleMilestone(rejKey!, !isRejected)}
+                            onClick={() => toggleMilestone(m.rejKey!, false)}
                             className="shrink-0 text-xs px-3 py-1.5 rounded font-medium border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
                           >
                             {isSaving ? '…' : 'Request Rework'}
@@ -539,10 +670,10 @@ export default function LecturerStudentDetailPage() {
                         )}
 
                         {/* Cancel rework */}
-                        {isRejected && rejKey && (
+                        {isRejected && m.rejKey && (
                           <button
                             disabled={isSaving}
-                            onClick={() => toggleMilestone(rejKey, true)}
+                            onClick={() => toggleMilestone(m.rejKey!, true)}
                             className="shrink-0 text-xs px-3 py-1.5 rounded font-medium text-bfh-gray-mid hover:text-bfh-gray-dark border border-bfh-gray-border bg-white transition-colors disabled:opacity-50"
                           >
                             {isSaving ? '…' : 'Cancel'}
@@ -550,11 +681,13 @@ export default function LecturerStudentDetailPage() {
                         )}
                       </div>
 
-                      {/* Feedback textarea — for proposal/midterm approval steps */}
-                      {feedbackKey && isLecturer && (
+                      {/* Feedback textarea — on student reflection step (3.3) and proposal approval */}
+                      {feedbackKey && (
                         <div className="border-t border-bfh-gray-border mx-4 mb-3 pt-2">
                           <label className="text-[10px] font-semibold uppercase tracking-wider text-bfh-gray-mid flex items-center gap-2">
-                            Feedback for student
+                            {m.key === 'midtermReflectionSubmitted'
+                              ? 'Correction / feedback for student (shown if rework is requested)'
+                              : 'Feedback for student'}
                             {savingFeedback === feedbackKey && <span className="text-bfh-gray-mid font-normal normal-case">Saving…</span>}
                             {savingFeedback !== feedbackKey && feedbackDraft[feedbackKey] === (progress[feedbackKey] ?? '') && feedbackDraft[feedbackKey] && (
                               <span className="text-green-600 font-normal normal-case">Saved</span>
@@ -563,7 +696,9 @@ export default function LecturerStudentDetailPage() {
                           <textarea
                             rows={3}
                             className="input mt-1 text-xs resize-none"
-                            placeholder="Add feedback or notes for the student…"
+                            placeholder={m.key === 'midtermReflectionSubmitted'
+                              ? 'Add corrections or notes for the student if the reflection needs rework…'
+                              : 'Add feedback or notes for the student…'}
                             value={feedbackDraft[feedbackKey] ?? ''}
                             onChange={e => setFeedbackDraft(prev => ({ ...prev, [feedbackKey]: e.target.value }))}
                             onBlur={() => saveFeedback(feedbackKey)}
@@ -571,34 +706,11 @@ export default function LecturerStudentDetailPage() {
                         </div>
                       )}
 
-                      {/* Uploaded files */}
+                      {/* Uploaded files (for standard student upload steps) */}
                       {milestoneFiles.length > 0 && (
                         <div className="border-t border-bfh-gray-border mx-4 mb-3 pt-2 space-y-1.5">
-                          <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider mb-1">
-                            Uploaded files
-                          </p>
-                          {milestoneFiles.map(f => (
-                            <div key={f.id} className={`flex items-center gap-2 rounded px-2 py-1.5 border ${
-                              !f.seenByLecturer ? 'bg-amber-50 border-amber-200' : 'bg-white border-bfh-gray-border'
-                            }`}>
-                              <span className="text-base">📄</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
-                                <div className="text-[10px] text-bfh-gray-mid">
-                                  {formatBytes(f.size)} · {formatDateTime(f.uploadedAt)}
-                                  {!f.seenByLecturer && <span className="ml-1.5 text-amber-600 font-semibold">New</span>}
-                                </div>
-                              </div>
-                              <a
-                                href={`/api/files/${f.matchId}/${f.storedName}`}
-                                download={f.originalName}
-                                onClick={() => setFiles(prev => prev.map(x => x.id === f.id ? { ...x, seenByLecturer: true } : x))}
-                                className="shrink-0 text-xs px-2.5 py-1 rounded bg-bfh-red text-white hover:bg-bfh-red-dark transition-colors"
-                              >
-                                Download
-                              </a>
-                            </div>
-                          ))}
+                          <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider mb-1">Uploaded files</p>
+                          {milestoneFiles.map(f => <FileRow key={f.id} f={f} onDownload={markFileSeen} />)}
                         </div>
                       )}
                     </div>

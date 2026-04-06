@@ -157,6 +157,12 @@ model ThesisProgress {
   midtermApproved     Boolean   @default(false)
   midtermApprovedAt   DateTime?
   midtermFeedback     String?
+  midtermMeetingCompleted         Boolean   @default(false)
+  midtermMeetingCompletedAt       DateTime?
+  midtermReflectionSubmitted      Boolean   @default(false)
+  midtermReflectionSubmittedAt    DateTime?
+  midtermReflectionRejected       Boolean   @default(false)
+  midtermReflectionRejectedAt     DateTime?
 
   notifyOnUpload      Boolean   @default(false)
 

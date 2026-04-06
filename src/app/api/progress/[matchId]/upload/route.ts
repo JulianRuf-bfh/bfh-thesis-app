@@ -4,6 +4,14 @@
  * Students upload documents (proposals, midterms, final thesis, presentations)
  * which are stored on disk under uploads/<matchId>/<uuid>.<ext>.
  *
+ * Supported milestone keys:
+ *   - proposalSubmitted, finalThesisSubmitted, finalPresentationSubmitted
+ *     → simple boolean flag + upload count in Progress
+ *   - midtermPresentation, midtermPaper
+ *     → tracked separately; once BOTH are uploaded midtermSubmitted is set
+ *   - midtermReflection
+ *     → sets midtermReflectionSubmitted in Progress
+ *
  * Security features:
  * - Rate limited (10 uploads per 60 seconds per user)
  * - File size limit (50 MB)
@@ -21,27 +29,42 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 
-/** Maps milestone field names to their corresponding timestamp fields. */
+/** Maps standard milestone keys → their Progress boolean timestamp fields. */
 const DATE_FIELD: Record<string, string> = {
   proposalSubmitted:          'proposalSubmittedAt',
-  midtermSubmitted:           'midtermSubmittedAt',
   finalThesisSubmitted:       'finalThesisSubmittedAt',
   finalPresentationSubmitted: 'finalPresentationSubmittedAt',
 }
+
+/** Maps standard milestone keys → their upload-count fields in Progress. */
 const COUNT_FIELD: Record<string, string> = {
   proposalSubmitted:          'proposalUploadCount',
-  midtermSubmitted:           'midtermUploadCount',
   finalThesisSubmitted:       'finalThesisUploadCount',
   finalPresentationSubmitted: 'finalPresentationUploadCount',
 }
+
+/** Maps standard milestone keys → their rework-request fields in Progress. */
 const REJECTED_FIELD: Record<string, string> = {
   proposalSubmitted:          'proposalRejected',
-  midtermSubmitted:           'midtermRejected',
   finalThesisSubmitted:       'finalThesisRejected',
   finalPresentationSubmitted: 'finalPresentationRejected',
 }
-const MAX_UPLOADS = 2
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+
+/** Midterm material milestone keys — together they constitute the midterm submission. */
+const MIDTERM_MATERIAL_KEYS = new Set(['midtermPresentation', 'midtermPaper'])
+
+/** Midterm reflection upload key — uploaded after supervisor gives oral feedback. */
+const REFLECTION_KEY = 'midtermReflection'
+
+/** All valid milestone strings the client is permitted to send. */
+const ALL_VALID_MILESTONES = new Set([
+  ...Object.keys(DATE_FIELD),
+  ...MIDTERM_MATERIAL_KEYS,
+  REFLECTION_KEY,
+])
+
+const MAX_UPLOADS    = 2
+const MAX_FILE_SIZE  = 50 * 1024 * 1024 // 50 MB
 const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
   'application/msword',
@@ -82,7 +105,7 @@ export async function POST(req: Request, { params }: { params: { matchId: string
   const file      = formData.get('file') as File | null
   const milestone = formData.get('milestone') as string | null
 
-  if (!file || !milestone || !DATE_FIELD[milestone]) {
+  if (!file || !milestone || !ALL_VALID_MILESTONES.has(milestone)) {
     return NextResponse.json({ error: 'Missing file or invalid milestone' }, { status: 400 })
   }
 
@@ -103,37 +126,60 @@ export async function POST(req: Request, { params }: { params: { matchId: string
     )
   }
   if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
-    return NextResponse.json(
-      { error: 'File MIME type not allowed.' },
-      { status: 415 }
-    )
+    return NextResponse.json({ error: 'File MIME type not allowed.' }, { status: 415 })
   }
 
-  // ── Enforce upload limit (bypassed when lecturer requested a rework) ──────
-  const countField    = COUNT_FIELD[milestone]
-  const rejectedField = REJECTED_FIELD[milestone]
-  const progress      = match.progress as Record<string, unknown> | null
-  const currentCount  = (progress?.[countField] as number) ?? 0
-  const isRework      = (progress?.[rejectedField] as boolean) ?? false
+  const progress = match.progress as Record<string, unknown> | null
 
-  if (!isRework && currentCount >= MAX_UPLOADS) {
-    return NextResponse.json(
-      { error: `Upload limit reached. Maximum ${MAX_UPLOADS} uploads allowed per milestone.` },
-      { status: 429 }
-    )
+  // ── Upload limit enforcement (varies by milestone type) ───────────────────
+  if (MIDTERM_MATERIAL_KEYS.has(milestone)) {
+    // Each material type (presentation / paper) has its own upload count
+    const existingCount = await prisma.thesisFile.count({
+      where: { matchId: params.matchId, milestone },
+    })
+    const isMidtermRework = (progress?.midtermRejected as boolean) ?? false
+    if (!isMidtermRework && existingCount >= MAX_UPLOADS) {
+      return NextResponse.json(
+        { error: `Upload limit reached for this file type. Maximum ${MAX_UPLOADS} uploads allowed.` },
+        { status: 429 }
+      )
+    }
+  } else if (milestone === REFLECTION_KEY) {
+    const existingCount = await prisma.thesisFile.count({
+      where: { matchId: params.matchId, milestone: REFLECTION_KEY },
+    })
+    const isReflectionRework = (progress?.midtermReflectionRejected as boolean) ?? false
+    if (!isReflectionRework && existingCount >= MAX_UPLOADS) {
+      return NextResponse.json(
+        { error: `Upload limit reached. Maximum ${MAX_UPLOADS} uploads allowed.` },
+        { status: 429 }
+      )
+    }
+  } else {
+    // Standard milestones: use Progress count fields
+    const countField    = COUNT_FIELD[milestone]
+    const rejectedField = REJECTED_FIELD[milestone]
+    const currentCount  = (progress?.[countField] as number) ?? 0
+    const isRework      = (progress?.[rejectedField] as boolean) ?? false
+    if (!isRework && currentCount >= MAX_UPLOADS) {
+      return NextResponse.json(
+        { error: `Upload limit reached. Maximum ${MAX_UPLOADS} uploads allowed per milestone.` },
+        { status: 429 }
+      )
+    }
   }
 
-  // Save to disk
+  // ── Save file to disk ─────────────────────────────────────────────────────
   const uploadsDir = path.join(process.cwd(), 'uploads', params.matchId)
   const storedName = `${randomUUID()}${ext}`
   try {
     await mkdir(uploadsDir, { recursive: true })
     await writeFile(path.join(uploadsDir, storedName), Buffer.from(await file.arrayBuffer()))
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to save file to disk' }, { status: 500 })
   }
 
-  // Create DB record
+  // ── Create file record in DB ──────────────────────────────────────────────
   const thesisFile = await prisma.thesisFile.create({
     data: {
       matchId:      params.matchId,
@@ -145,27 +191,76 @@ export async function POST(req: Request, { params }: { params: { matchId: string
     },
   })
 
-  // Auto-mark milestone submitted + increment upload count
-  // If this is a rework, also clear the rejected flag
-  await prisma.thesisProgress.upsert({
-    where:  { matchId: params.matchId },
-    create: {
-      matchId: params.matchId,
-      [milestone]: true,
-      [DATE_FIELD[milestone]]: new Date(),
-      [countField]: 1,
-      [rejectedField]: false,
-    },
-    update: {
-      [milestone]: true,
-      [DATE_FIELD[milestone]]: new Date(),
-      [countField]: { increment: 1 },
-      [rejectedField]: false,    // clear rejection when student re-uploads
-      [`${rejectedField}At`]: null,
-    },
-  })
+  // ── Update Progress based on milestone type ───────────────────────────────
+  if (MIDTERM_MATERIAL_KEYS.has(milestone)) {
+    // After saving the file, check if BOTH types are now present
+    const [presCount, paperCount] = await Promise.all([
+      prisma.thesisFile.count({ where: { matchId: params.matchId, milestone: 'midtermPresentation' } }),
+      prisma.thesisFile.count({ where: { matchId: params.matchId, milestone: 'midtermPaper' } }),
+    ])
+    const bothReady = presCount > 0 && paperCount > 0
 
-  // Send notification if enabled
+    await prisma.thesisProgress.upsert({
+      where:  { matchId: params.matchId },
+      create: {
+        matchId: params.matchId,
+        midtermSubmitted:   bothReady,
+        midtermSubmittedAt: bothReady ? new Date() : null,
+        midtermRejected:    false,
+        midtermRejectedAt:  null,
+      },
+      update: {
+        midtermSubmitted:   bothReady,
+        // Only stamp the time the first time both files are ready
+        ...(bothReady && !progress?.midtermSubmittedAt ? { midtermSubmittedAt: new Date() } : {}),
+        midtermRejected:    false,
+        midtermRejectedAt:  null,
+      },
+    })
+
+  } else if (milestone === REFLECTION_KEY) {
+    // Mark reflection submitted and clear any rework flag
+    await prisma.thesisProgress.upsert({
+      where:  { matchId: params.matchId },
+      create: {
+        matchId: params.matchId,
+        midtermReflectionSubmitted:   true,
+        midtermReflectionSubmittedAt: new Date(),
+        midtermReflectionRejected:    false,
+        midtermReflectionRejectedAt:  null,
+      },
+      update: {
+        midtermReflectionSubmitted:   true,
+        midtermReflectionSubmittedAt: new Date(),
+        midtermReflectionRejected:    false,
+        midtermReflectionRejectedAt:  null,
+      },
+    })
+
+  } else {
+    // Standard milestone: set boolean, timestamp, increment count, clear rework flag
+    const countField    = COUNT_FIELD[milestone]
+    const rejectedField = REJECTED_FIELD[milestone]
+    await prisma.thesisProgress.upsert({
+      where:  { matchId: params.matchId },
+      create: {
+        matchId: params.matchId,
+        [milestone]:              true,
+        [DATE_FIELD[milestone]]:  new Date(),
+        [countField]:             1,
+        [rejectedField]:          false,
+      },
+      update: {
+        [milestone]:              true,
+        [DATE_FIELD[milestone]]:  new Date(),
+        [countField]:             { increment: 1 },
+        [rejectedField]:          false,
+        [`${rejectedField}At`]:   null,
+      },
+    })
+  }
+
+  // ── Send email notification if lecturer has enabled it ────────────────────
   if (match.progress?.notifyOnUpload) {
     await sendUploadNotification({
       lecturerEmail: match.topic.lecturer.email,
@@ -177,5 +272,5 @@ export async function POST(req: Request, { params }: { params: { matchId: string
     })
   }
 
-  return NextResponse.json({ ...thesisFile, uploadsUsed: currentCount + 1, uploadsMax: MAX_UPLOADS })
+  return NextResponse.json({ ...thesisFile, uploadsMax: MAX_UPLOADS })
 }
