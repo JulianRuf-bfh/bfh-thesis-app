@@ -1,3 +1,10 @@
+/**
+ * Single topic detail API.
+ *
+ * GET — returns full topic details including lecturer info, preference/match
+ *       counts, and computed available slots. Used by the topic detail view.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

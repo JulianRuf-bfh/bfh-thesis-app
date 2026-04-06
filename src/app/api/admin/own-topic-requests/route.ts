@@ -1,7 +1,17 @@
-// GET  — list all own-topic proposals (optionally filtered by status query param)
-// POST — admin manually assigns a supervisor (body: { proposalId, lecturerId })
-//        Bypasses the supervisor's own accept/reject flow — useful for edge cases.
-//        Follows the same logic as the ACCEPT path in the lecturer route.
+/**
+ * Admin own-topic requests API — view and manage student-proposed topics.
+ *
+ * GET  — list all proposals (optionally filtered by status and/or semesterId)
+ * POST — admin manually assigns a supervisor to a proposal
+ *        Bypasses the lecturer accept/reject flow — useful for edge cases
+ *        where no lecturer has responded, or admin needs to override.
+ *
+ * The POST flow:
+ *   1. Verify proposal is not already matched/withdrawn
+ *   2. Verify student is not already matched
+ *   3. Verify lecturer exists and has capacity
+ *   4. In a transaction: create topic, create match, update statuses
+ */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'

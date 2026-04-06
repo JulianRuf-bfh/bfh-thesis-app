@@ -1,3 +1,13 @@
+/**
+ * Admin user management API.
+ *
+ * GET  — list all users (optionally filtered by role query param)
+ * POST — create a new user (with optional password hash)
+ * PUT  — update user fields (name, role, level, programme, specialisation)
+ *
+ * All endpoints require ADMIN role.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

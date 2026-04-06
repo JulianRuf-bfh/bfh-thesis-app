@@ -1,3 +1,12 @@
+/**
+ * Admin email API — sends matching result notifications.
+ *
+ * POST — triggers email dispatch for all matches in a semester.
+ *        Sends individual emails to students and grouped summaries to lecturers.
+ *        Requires matching to have been run first.
+ *        Sets semester.emailsSent = true after completion.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

@@ -23,11 +23,27 @@ export default function LecturerDashboard() {
 
   useEffect(() => { fetchTopics() }, [fetchTopics])
 
+  const toggleActive = async (id: string, isActive: boolean) => {
+    const action = isActive ? 'deactivate' : 'activate'
+    const warning = isActive
+      ? 'Deactivate this topic? It will be hidden from students and any preferences for it will be removed.'
+      : 'Activate this topic? It will become visible to students.'
+    if (!confirm(warning)) return
+    const res = await fetch(`/api/lecturer/topics/${id}`, { method: 'PATCH' })
+    if (res.ok) {
+      showToast(`Topic ${action}d`, true)
+      fetchTopics()
+    } else {
+      const { error } = await res.json()
+      showToast(error ?? `Could not ${action}`, false)
+    }
+  }
+
   const deleteTopic = async (id: string, title: string) => {
-    if (!confirm(`Deactivate topic "${title}"? Students who selected it will lose this preference.`)) return
+    if (!confirm(`Permanently delete "${title}"? This cannot be undone.`)) return
     const res = await fetch(`/api/lecturer/topics/${id}`, { method: 'DELETE' })
     if (res.ok) {
-      showToast('Topic deactivated', true)
+      showToast('Topic deleted', true)
       fetchTopics()
     } else {
       const { error } = await res.json()
@@ -159,9 +175,19 @@ export default function LecturerDashboard() {
                     }
                   </td>
                   <td>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
                       <button onClick={() => router.push(`/lecturer/topics/${t.id}/edit`)} className="btn-secondary text-xs py-1">Edit</button>
-                      {t.isActive && (
+                      <button
+                        onClick={() => toggleActive(t.id, t.isActive)}
+                        className={`text-xs py-1 px-2 rounded border font-medium transition-colors ${
+                          t.isActive
+                            ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {t.isActive ? '● Active' : '○ Inactive'}
+                      </button>
+                      {t.matchCount === 0 && (
                         <button onClick={() => deleteTopic(t.id, t.title)} className="btn-danger text-xs py-1">Delete</button>
                       )}
                     </div>

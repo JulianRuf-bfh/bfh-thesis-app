@@ -1,3 +1,16 @@
+/**
+ * Thesis progress API — tracks milestone completion for a student–topic match.
+ *
+ * GET  — fetch the current progress state (milestones, timestamps, upload counts)
+ * PATCH — update progress fields with role-based permissions:
+ *   - Students can mark their own milestones (kickoff confirmed, submissions)
+ *   - Lecturers can approve/reject submissions and toggle upload notifications
+ *   - Admins can modify all fields
+ *
+ * Each boolean field has a corresponding timestamp field (e.g. proposalSubmitted
+ * → proposalSubmittedAt) that is auto-set when toggled.
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

@@ -1,9 +1,14 @@
-// POST — send a supervisor request (student → lecturer)
-//   body: { lecturerId }
-//   Transitions proposal status from DRAFT → SUBMITTED on first request.
-//
-// DELETE — withdraw a single pending supervisor request
-//   body: { lecturerId }
+/**
+ * Student supervisor request API for own-topic proposals.
+ *
+ * POST   — send a supervision request to a lecturer
+ *           Validates: proposal exists, not already matched/withdrawn,
+ *           no duplicate request, lecturer has capacity.
+ *           Transitions proposal from DRAFT → SUBMITTED on first request.
+ *
+ * DELETE — withdraw a pending supervisor request
+ *           Only PENDING requests can be withdrawn.
+ */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'

@@ -1,9 +1,17 @@
-// GET  — fetch the student's current own-topic proposal (with supervisor requests)
-// POST — create or update the proposal draft (fields: title, description, method, language)
-// DEL  — withdraw the proposal (sets status WITHDRAWN, cancels all PENDING requests)
-//
-// Unlike the preference workflow, a student can only have ONE proposal at a time.
-// The semesterId is always inferred from the active semester (same pattern as preferences).
+/**
+ * Student own-topic proposal API.
+ *
+ * Students who want to propose their own thesis topic (instead of selecting
+ * from the catalogue) use this endpoint to manage their proposal.
+ *
+ * GET    — fetch the student's current proposal with supervisor request statuses
+ * POST   — create or update a draft proposal (title, description, method, language)
+ * DELETE — withdraw the proposal (cancels all pending supervisor requests)
+ *
+ * A student can only have ONE proposal at a time. The proposal goes through
+ * a lifecycle: DRAFT → SUBMITTED → MATCHED (or WITHDRAWN).
+ * The semesterId is always inferred from the currently active semester.
+ */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
@@ -41,6 +49,12 @@ export async function POST(req: NextRequest) {
   const { title, description, method, language } = body
 
   if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+  if (typeof title !== 'string' || title.trim().length > 300) {
+    return NextResponse.json({ error: 'Title must be max 300 characters' }, { status: 400 })
+  }
+  if (description && typeof description === 'string' && description.length > 5000) {
+    return NextResponse.json({ error: 'Description must be max 5000 characters' }, { status: 400 })
+  }
   if (!method)        return NextResponse.json({ error: 'Method is required' }, { status: 400 })
   if (!language)      return NextResponse.json({ error: 'Language is required' }, { status: 400 })
 

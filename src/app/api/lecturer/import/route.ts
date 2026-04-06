@@ -1,9 +1,20 @@
+/**
+ * Lecturer topic import API — reuse topics from previous semesters.
+ *
+ * GET  — list the lecturer's topics from all non-active (past) semesters,
+ *        grouped by semester, with parsed JSON fields for display.
+ *
+ * POST — import selected topics into the current active semester.
+ *        Creates new topic records (copies data, does not link to originals).
+ *        Validates capacity: total maxStudents across all active topics ≤ 8.
+ *        Respects the lecturer deadline — blocked after it passes.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { parseProgrammes, parseSpecialisations, parseMethods } from '@/lib/utils'
 
-// GET — fetch lecturer's topics from all non-active semesters
 export async function GET() {
   const session = await getAuth()
   if (!session || (session.user.role !== 'LECTURER' && session.user.role !== 'ADMIN')) {

@@ -1,7 +1,20 @@
+/**
+ * Lecturer students API — lists matched students for the current lecturer.
+ *
+ * Returns two groups:
+ * - primary: students matched to topics owned by this lecturer (first supervisor)
+ * - co: students where this lecturer is a co-supervisor
+ *
+ * Results are gated on semester.resultsPublished — lecturers only see
+ * their students after the admin publishes matching results.
+ * Admins always see all data regardless of publication status.
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+/** Shared include clause for match queries — fetches student, topic, progress, and file data. */
 const MATCH_INCLUDE = {
   student:  { select: { id: true, name: true, email: true, programme: true, level: true, studentId: true } },
   topic:    { select: { id: true, title: true, lecturerId: true } },
@@ -14,6 +27,16 @@ export async function GET() {
   const session = await getAuth()
   if (!session || !['LECTURER', 'ADMIN'].includes(session.user.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Lecturers only see matches after admin has published results.
+  // Admins always see everything.
+  const activeSemester = await prisma.semester.findFirst({
+    where: { isActive: true },
+    select: { resultsPublished: true },
+  })
+  if (session.user.role === 'LECTURER' && !activeSemester?.resultsPublished) {
+    return NextResponse.json({ primary: [], co: [], published: false })
   }
 
   const [primaryMatches, coMatches] = await Promise.all([
@@ -34,5 +57,6 @@ export async function GET() {
   return NextResponse.json({
     primary: primaryMatches,
     co:      coMatches,
+    published: activeSemester?.resultsPublished ?? false,
   })
 }

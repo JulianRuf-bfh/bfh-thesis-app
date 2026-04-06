@@ -1,3 +1,13 @@
+/**
+ * Individual semester management API.
+ *
+ * PUT    — update semester fields (name, deadlines, isActive, matchingApproved).
+ *          When activating a semester, all other semesters are deactivated first
+ *          to enforce the single-active-semester invariant.
+ * DELETE — permanently delete a semester. Cascades to topics, preferences, and
+ *          matches via the Prisma schema's onDelete rules.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

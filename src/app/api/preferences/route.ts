@@ -1,9 +1,23 @@
+/**
+ * Student preferences API — manage topic selection rankings.
+ *
+ * Students can select up to 4 topics ranked by preference. The matching
+ * algorithm uses these rankings (with priority dates for tie-breaking)
+ * to assign students to topics.
+ *
+ * GET    — fetch the student's current preference list with topic details
+ * POST   — add a topic to preferences (auto-assigned next rank)
+ * PUT    — reorder preferences (two-phase rank update to avoid constraint violations)
+ * DELETE — remove a topic and re-rank remaining preferences
+ *
+ * All mutations are blocked after the student deadline or after matching runs.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { parseProgrammes, parseSpecialisations, parseMethods } from '@/lib/utils'
 
-// GET — fetch current student's preferences for the active semester
 export async function GET() {
   const session = await getAuth()
   if (!session || session.user.role !== 'STUDENT') {
@@ -55,7 +69,7 @@ export async function GET() {
   })))
 }
 
-// POST — add a topic to preferences (auto-assigned to next available rank)
+/** Add a topic to preferences — validates availability, capacity, and limits. */
 export async function POST(req: NextRequest) {
   const session = await getAuth()
   if (!session || session.user.role !== 'STUDENT') {
@@ -123,7 +137,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(pref, { status: 201 })
 }
 
-// PUT — reorder preferences (send full ordered array of topicIds)
+/** Reorder preferences — uses a two-phase update to avoid unique constraint violations. */
 export async function PUT(req: NextRequest) {
   const session = await getAuth()
   if (!session || session.user.role !== 'STUDENT') {
@@ -169,7 +183,7 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json({ ok: true })
 }
 
-// DELETE — remove a topic from preferences and re-rank remaining
+/** Remove a topic from preferences and re-rank the remaining entries. */
 export async function DELETE(req: NextRequest) {
   const session = await getAuth()
   if (!session || session.user.role !== 'STUDENT') {

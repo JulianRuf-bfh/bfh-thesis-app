@@ -1,3 +1,11 @@
+/**
+ * Mark-as-seen endpoint — marks all unseen files for a match as seen by the lecturer.
+ *
+ * POST — bulk-updates seenByLecturer = true for all thesis files in this match.
+ *        Used when a lecturer opens the student progress view to clear the
+ *        "new files" indicator.
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

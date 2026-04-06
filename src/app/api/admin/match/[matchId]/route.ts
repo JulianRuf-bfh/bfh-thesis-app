@@ -1,3 +1,10 @@
+/**
+ * Admin single match API — fetch detailed information about a specific match.
+ *
+ * GET — returns the match with full student, topic, lecturer, progress,
+ *       files, and co-supervisor data. Used for the admin detail view.
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

@@ -1,3 +1,17 @@
+/**
+ * Admin matching API — manages the student–topic matching workflow.
+ *
+ * The matching lifecycle:
+ *   1. Admin approves matching (sets matchingApproved on semester)
+ *   2. POST — runs the matching algorithm (Gale–Shapley variant)
+ *   3. GET  — admin reviews the results (matches + unmatched students)
+ *   4. PATCH — publishes results (makes them visible to lecturers & students)
+ *   5. DELETE — resets matching (removes algorithm matches, keeps manual ones)
+ *
+ * Manual matches (matchedRank = 0) are preserved across resets since they
+ * were explicitly created by the admin outside the algorithm.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -7,7 +21,48 @@ function requireAdmin(session: Awaited<ReturnType<typeof getAuth>>) {
   return session?.user.role === 'ADMIN'
 }
 
-// POST — run the matching algorithm
+export async function PATCH(req: NextRequest) {
+  const session = await getAuth()
+  if (!requireAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { semesterId } = await req.json()
+  if (!semesterId) return NextResponse.json({ error: 'semesterId required' }, { status: 400 })
+
+  const semester = await prisma.semester.findUnique({ where: { id: semesterId } })
+  if (!semester) return NextResponse.json({ error: 'Semester not found' }, { status: 404 })
+  if (!semester.matchingRun) return NextResponse.json({ error: 'Matching has not been run yet' }, { status: 400 })
+
+  await prisma.semester.update({
+    where: { id: semesterId },
+    data: { resultsPublished: true },
+  })
+  return NextResponse.json({ ok: true })
+}
+
+/** Reset matching — deletes algorithm matches (rank > 0), preserves manual (rank = 0). */
+export async function DELETE(req: NextRequest) {
+  const session = await getAuth()
+  if (!requireAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { semesterId } = await req.json()
+  if (!semesterId) return NextResponse.json({ error: 'semesterId required' }, { status: 400 })
+
+  const semester = await prisma.semester.findUnique({ where: { id: semesterId } })
+  if (!semester) return NextResponse.json({ error: 'Semester not found' }, { status: 404 })
+
+  // Delete only algorithm-generated matches (matchedRank > 0), keep manual matches (matchedRank = 0)
+  await prisma.$transaction([
+    prisma.match.deleteMany({ where: { semesterId, matchedRank: { gt: 0 } } }),
+    prisma.semester.update({
+      where: { id: semesterId },
+      data: { matchingRun: false, resultsPublished: false, emailsSent: false },
+    }),
+  ])
+
+  return NextResponse.json({ ok: true })
+}
+
+/** Run the matching algorithm. Requires admin approval first. */
 export async function POST(req: NextRequest) {
   const session = await getAuth()
   if (!requireAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -25,7 +80,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(result)
 }
 
-// GET — fetch current matching results for a semester
+/** Fetch matching results for admin review — includes matches, progress, grading, and unmatched students. */
 export async function GET(req: NextRequest) {
   const session = await getAuth()
   if (!requireAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

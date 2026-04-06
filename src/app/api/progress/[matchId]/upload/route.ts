@@ -1,3 +1,17 @@
+/**
+ * File upload endpoint for thesis milestones.
+ *
+ * Students upload documents (proposals, midterms, final thesis, presentations)
+ * which are stored on disk under uploads/<matchId>/<uuid>.<ext>.
+ *
+ * Security features:
+ * - Rate limited (10 uploads per 60 seconds per user)
+ * - File size limit (50 MB)
+ * - Allowed file types: PDF, Word, PowerPoint, ZIP, text
+ * - Upload count per milestone (max 2, reset on rework)
+ * - Automatic lecturer notification when enabled
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -7,6 +21,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 
+/** Maps milestone field names to their corresponding timestamp fields. */
 const DATE_FIELD: Record<string, string> = {
   proposalSubmitted:          'proposalSubmittedAt',
   midtermSubmitted:           'midtermSubmittedAt',

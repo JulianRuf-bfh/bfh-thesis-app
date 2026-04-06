@@ -11,8 +11,11 @@ export default function AdminMatchingPage() {
   const [running, setRunning] = useState(false)
   const [sendingEmails, setSendingEmails] = useState(false)
   const [approving, setApproving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
   const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState<'matching' | 'own-topic'>('matching')
 
   // ── Manual match state ───────────────────────────────────────────────────
   const [manualOpen, setManualOpen]             = useState(false)
@@ -45,6 +48,87 @@ export default function AdminMatchingPage() {
   const [coResults, setCoResults]           = useState<any[]>([])
   const [selectedCoSups, setSelectedCoSups] = useState<any[]>([])
   const coTimer = useRef<NodeJS.Timeout | null>(null)
+
+  // ── Own-Topic Requests state ────────────────────────────────────────────
+  const [proposals, setProposals] = useState<any[]>([])
+  const [otLoading, setOtLoading] = useState(true)
+  const [otFilter, setOtFilter]   = useState<string>('SUBMITTED')
+  const [otAssigning, setOtAssigning] = useState<string | null>(null)
+  const [otToast, setOtToast]     = useState<{ msg: string; ok: boolean } | null>(null)
+  const [otSearch, setOtSearch]   = useState<Record<string, string>>({})
+  const [otResults, setOtResults] = useState<Record<string, any[]>>({})
+  const [otSearching, setOtSearching] = useState<string | null>(null)
+  const otTimers = useRef<Record<string, NodeJS.Timeout>>({})
+
+  const showOtToast = (msg: string, ok: boolean) => {
+    setOtToast({ msg, ok }); setTimeout(() => setOtToast(null), 3500)
+  }
+
+  const fetchOwnTopicData = useCallback(async () => {
+    setOtLoading(true)
+    const params = otFilter !== 'ALL' ? `?status=${otFilter}` : ''
+    const r = await fetch(`/api/admin/own-topic-requests${params}`)
+    if (r.ok) setProposals(await r.json())
+    setOtLoading(false)
+  }, [otFilter])
+
+  useEffect(() => {
+    if (activeTab === 'own-topic') fetchOwnTopicData()
+  }, [activeTab, fetchOwnTopicData])
+
+  const handleOtSearch = (proposalId: string, q: string) => {
+    setOtSearch(prev => ({ ...prev, [proposalId]: q }))
+    if (otTimers.current[proposalId]) clearTimeout(otTimers.current[proposalId])
+    if (!q.trim()) { setOtResults(prev => ({ ...prev, [proposalId]: [] })); return }
+    setOtSearching(proposalId)
+    otTimers.current[proposalId] = setTimeout(async () => {
+      const r = await fetch(`/api/lecturers?search=${encodeURIComponent(q)}`)
+      const data = r.ok ? await r.json() : []
+      setOtResults(prev => ({ ...prev, [proposalId]: data }))
+      setOtSearching(null)
+    }, 300)
+  }
+
+  const assignSupervisor = async (proposalId: string, lecturerId: string) => {
+    setOtAssigning(proposalId)
+    const res = await fetch('/api/admin/own-topic-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proposalId, lecturerId }),
+    })
+    if (res.ok) {
+      showOtToast('Supervisor assigned — match created!', true)
+      setOtSearch(prev => ({ ...prev, [proposalId]: '' }))
+      setOtResults(prev => ({ ...prev, [proposalId]: [] }))
+      await fetchOwnTopicData()
+    } else {
+      const { error } = await res.json().catch(() => ({ error: 'Unknown error' }))
+      showOtToast(error ?? 'Could not assign supervisor', false)
+    }
+    setOtAssigning(null)
+  }
+
+  const OT_STATUS_COLORS: Record<string, string> = {
+    DRAFT:     'bg-bfh-gray-light text-bfh-gray-mid border-bfh-gray-border',
+    SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
+    MATCHED:   'bg-green-50 text-green-700 border-green-200',
+    WITHDRAWN: 'bg-red-50 text-red-700 border-red-200',
+  }
+
+  const OT_METHOD_LABELS: Record<string, string> = {
+    QUANTITATIVE:           'Quantitative',
+    QUALITATIVE:            'Qualitative',
+    DESIGN_SCIENCE_RESEARCH:'Design Science Research',
+    LITERATURE_REVIEW:      'Literature Review',
+  }
+
+  const otFilterOptions = [
+    { value: 'SUBMITTED', label: 'Open (Submitted)' },
+    { value: 'MATCHED',   label: 'Matched' },
+    { value: 'DRAFT',     label: 'Draft' },
+    { value: 'WITHDRAWN', label: 'Withdrawn' },
+    { value: 'ALL',       label: 'All' },
+  ]
 
   const searchStudents = (q: string) => {
     setStudentQ(q); setSelectedStudent(null)
@@ -196,85 +280,279 @@ export default function AdminMatchingPage() {
     else { const { error } = await res.json(); showMsg(error ?? 'Email sending failed', false) }
   }
 
-// ── Progress dots ─────────────────────────────────────────────────────────────
-const PROGRESS_MILESTONES = [
-  { label: 'Proposal',      submitted: 'proposalSubmitted',          approved: 'proposalApproved',          rejected: 'proposalRejected' },
-  { label: 'Midterm',       submitted: 'midtermSubmitted',           approved: 'midtermApproved',           rejected: 'midtermRejected' },
-  { label: 'Final Thesis',  submitted: 'finalThesisSubmitted',       approved: 'finalThesisApproved',       rejected: 'finalThesisRejected' },
-  { label: 'Final Pres.',   submitted: 'finalPresentationSubmitted', approved: 'finalPresentationApproved', rejected: 'finalPresentationRejected' },
-] as const
+  const handlePublish = async () => {
+    if (!semester) return
+    if (!confirm('Publish results? Students and lecturers will be able to see their assignments.')) return
+    setPublishing(true)
+    const res = await fetch('/api/admin/matching', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ semesterId: semester.id }),
+    })
+    setPublishing(false)
+    if (res.ok) { showMsg('Results published — students and lecturers can now see their assignments.', true); fetchData() }
+    else { const { error } = await res.json(); showMsg(error ?? 'Publish failed', false) }
+  }
 
-// ── Shared tooltip dot ────────────────────────────────────────────────────────
-function TooltipDot({ cls, label, status, statusCls }: { cls: string; label: string; status: string; statusCls: string }) {
-  return (
-    <div className="relative group flex items-center">
-      <span className={`w-2.5 h-2.5 rounded-full inline-block cursor-default ${cls}`} />
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-10 pointer-events-none">
-        <div className="bg-bfh-gray-dark text-white text-[10px] font-medium rounded px-2 py-1 whitespace-nowrap shadow-lg">
-          <div>{label}</div>
-          <div className={statusCls}>{status}</div>
+  const handleReset = async () => {
+    if (!semester) return
+    if (!confirm('Reset matching? This will delete all algorithm-generated matches and allow you to re-run. Manual matches are kept.')) return
+    setResetting(true)
+    const res = await fetch('/api/admin/matching', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ semesterId: semester.id }),
+    })
+    setResetting(false)
+    if (res.ok) { showMsg('Matching reset — you can now re-run the algorithm.', true); setResults(null); fetchData() }
+    else { const { error } = await res.json(); showMsg(error ?? 'Reset failed', false) }
+  }
+
+  if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
+
+  // ── Progress dots ───────────────────────────────────────────────────────────
+  const PROGRESS_MILESTONES = [
+    { label: 'Proposal',      submitted: 'proposalSubmitted',          approved: 'proposalApproved',          rejected: 'proposalRejected' },
+    { label: 'Midterm',       submitted: 'midtermSubmitted',           approved: 'midtermApproved',           rejected: 'midtermRejected' },
+    { label: 'Final Thesis',  submitted: 'finalThesisSubmitted',       approved: 'finalThesisApproved',       rejected: 'finalThesisRejected' },
+    { label: 'Final Pres.',   submitted: 'finalPresentationSubmitted', approved: 'finalPresentationApproved', rejected: 'finalPresentationRejected' },
+  ] as const
+
+  // eslint-disable-next-line no-inner-declarations
+  function TooltipDot({ cls, label, status, statusCls }: { cls: string; label: string; status: string; statusCls: string }) {
+    return (
+      <div className="relative group flex items-center">
+        <span className={`w-2.5 h-2.5 rounded-full inline-block cursor-default ${cls}`} />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-10 pointer-events-none">
+          <div className="bg-bfh-gray-dark text-white text-[10px] font-medium rounded px-2 py-1 whitespace-nowrap shadow-lg">
+            <div>{label}</div>
+            <div className={statusCls}>{status}</div>
+          </div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-bfh-gray-dark" />
         </div>
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-bfh-gray-dark" />
       </div>
-    </div>
-  )
-}
+    )
+  }
 
-function ProgressDots({ progress }: { progress: Record<string, boolean> | null }) {
-  return (
-    <div className="flex gap-1.5 items-center">
-      {PROGRESS_MILESTONES.map(m => {
-        const approved  = progress?.[m.approved]
-        const rejected  = progress?.[m.rejected]
-        const submitted = progress?.[m.submitted]
-        let cls = 'bg-bfh-gray-border'; let status = 'Not started'; let statusCls = 'text-bfh-gray-mid'
-        if (approved)       { cls = 'bg-green-500'; status = 'Approved';        statusCls = 'text-green-300' }
-        else if (rejected)  { cls = 'bg-red-500';   status = 'Rejected';        statusCls = 'text-red-300' }
-        else if (submitted) { cls = 'bg-amber-400'; status = 'Pending review';  statusCls = 'text-amber-300' }
-        return <TooltipDot key={m.label} cls={cls} label={m.label} status={status} statusCls={statusCls} />
-      })}
-    </div>
-  )
-}
+  // eslint-disable-next-line no-inner-declarations
+  function ProgressDots({ progress }: { progress: Record<string, boolean> | null }) {
+    return (
+      <div className="flex gap-1.5 items-center">
+        {PROGRESS_MILESTONES.map(m => {
+          const approved  = progress?.[m.approved]
+          const rejected  = progress?.[m.rejected]
+          const submitted = progress?.[m.submitted]
+          let cls = 'bg-bfh-gray-border'; let status = 'Not started'; let statusCls = 'text-bfh-gray-mid'
+          if (approved)       { cls = 'bg-green-500'; status = 'Approved';        statusCls = 'text-green-300' }
+          else if (rejected)  { cls = 'bg-red-500';   status = 'Rejected';        statusCls = 'text-red-300' }
+          else if (submitted) { cls = 'bg-amber-400'; status = 'Pending review';  statusCls = 'text-amber-300' }
+          return <TooltipDot key={m.label} cls={cls} label={m.label} status={status} statusCls={statusCls} />
+        })}
+      </div>
+    )
+  }
 
-// ── Grading dots ──────────────────────────────────────────────────────────────
-function GradingDots({ grading }: {
-  grading: { mainScored: number; mainTotal: number; submitted: boolean; submittedAt: string | null; aolFilled: number; aolTotal: number } | null
-}) {
-  // Main grading dot: green = submitted, amber = in progress, gray = not started
-  const mainCls = !grading || grading.mainScored === 0
-    ? 'bg-bfh-gray-border'
-    : grading.submitted ? 'bg-green-500' : 'bg-amber-400'
-  const mainStatus = !grading || grading.mainScored === 0
-    ? 'Not started'
-    : grading.submitted
-    ? `Submitted · ${grading.mainScored}/${grading.mainTotal} scored`
-    : `In progress · ${grading.mainScored}/${grading.mainTotal} scored`
-  const mainStatusCls = grading?.submitted ? 'text-green-300' : grading && grading.mainScored > 0 ? 'text-amber-300' : 'text-bfh-gray-mid'
+  // eslint-disable-next-line no-inner-declarations
+  function GradingDots({ grading }: {
+    grading: { mainScored: number; mainTotal: number; submitted: boolean; submittedAt: string | null; aolFilled: number; aolTotal: number } | null
+  }) {
+    const mainCls = !grading || grading.mainScored === 0
+      ? 'bg-bfh-gray-border'
+      : grading.submitted ? 'bg-green-500' : 'bg-amber-400'
+    const mainStatus = !grading || grading.mainScored === 0
+      ? 'Not started'
+      : grading.submitted
+      ? `Submitted · ${grading.mainScored}/${grading.mainTotal} scored`
+      : `In progress · ${grading.mainScored}/${grading.mainTotal} scored`
+    const mainStatusCls = grading?.submitted ? 'text-green-300' : grading && grading.mainScored > 0 ? 'text-amber-300' : 'text-bfh-gray-mid'
 
-  // AoL dot: green = all filled, amber = partial, gray = none
-  const aolCls = !grading || grading.aolFilled === 0
-    ? 'bg-bfh-gray-border'
-    : grading.aolFilled >= grading.aolTotal ? 'bg-green-500' : 'bg-amber-400'
-  const aolStatus = !grading || grading.aolFilled === 0
-    ? 'Not started'
-    : `${grading.aolFilled}/${grading.aolTotal} criteria filled`
-  const aolStatusCls = grading && grading.aolFilled >= grading.aolTotal ? 'text-green-300' : grading && grading.aolFilled > 0 ? 'text-amber-300' : 'text-bfh-gray-mid'
+    const aolCls = !grading || grading.aolFilled === 0
+      ? 'bg-bfh-gray-border'
+      : grading.aolFilled >= grading.aolTotal ? 'bg-green-500' : 'bg-amber-400'
+    const aolStatus = !grading || grading.aolFilled === 0
+      ? 'Not started'
+      : `${grading.aolFilled}/${grading.aolTotal} criteria filled`
+    const aolStatusCls = grading && grading.aolFilled >= grading.aolTotal ? 'text-green-300' : grading && grading.aolFilled > 0 ? 'text-amber-300' : 'text-bfh-gray-mid'
 
-  return (
-    <div className="flex gap-1.5 items-center">
-      <TooltipDot cls={mainCls} label="Main Grading" status={mainStatus} statusCls={mainStatusCls} />
-      <TooltipDot cls={aolCls}  label="AoL Assessment" status={aolStatus} statusCls={aolStatusCls} />
-    </div>
-  )
-}
-
-if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
+    return (
+      <div className="flex gap-1.5 items-center">
+        <TooltipDot cls={mainCls} label="Main Grading" status={mainStatus} statusCls={mainStatusCls} />
+        <TooltipDot cls={aolCls}  label="AoL Assessment" status={aolStatus} statusCls={aolStatusCls} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <h1>Matching</h1>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 p-1 bg-bfh-gray-light rounded-lg w-fit">
+        {([
+          { key: 'matching' as const, label: 'Algorithm Matching' },
+          { key: 'own-topic' as const, label: 'Own-Topic Requests' },
+        ]).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.key
+                ? 'bg-white shadow-sm text-bfh-gray-dark'
+                : 'text-bfh-gray-mid hover:text-bfh-gray-dark'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Own-Topic Requests Tab ── */}
+      {activeTab === 'own-topic' && (
+        <div className="space-y-5">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className="text-sm text-bfh-gray-mid">
+              Student-proposed topics awaiting a supervisor. You can manually assign a supervisor if needed.
+            </p>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-bfh-gray-mid font-medium">Show:</label>
+              <select
+                className="input text-sm py-1.5"
+                value={otFilter}
+                onChange={e => { setOtFilter(e.target.value); setOtLoading(true) }}
+              >
+                {otFilterOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {otLoading ? (
+            <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
+          ) : proposals.length === 0 ? (
+            <div className="card p-10 text-center text-bfh-gray-mid">
+              <div className="text-3xl mb-2">📭</div>
+              <p className="text-sm">No proposals with status &ldquo;{otFilter}&rdquo;.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {proposals.map((p: any) => (
+                <div key={p.id} className="card overflow-hidden">
+                  {/* Card header */}
+                  <div className="px-4 py-3 bg-bfh-gray-light border-b border-bfh-gray-border flex items-start gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-bfh-gray-dark">{p.student.name}</span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${OT_STATUS_COLORS[p.status]}`}>
+                          {p.status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-bfh-gray-mid">
+                        {p.student.email} · {[p.student.programme, p.student.level].filter(Boolean).join(' / ')}
+                        {p.student.specialisation && ` · ${p.student.specialisation.replace(/_/g, ' ')}`}
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-bfh-gray-mid shrink-0">
+                      {p.semester.name} · Submitted {formatDateTime(p.createdAt)}
+                    </div>
+                  </div>
+
+                  {/* Topic info */}
+                  <div className="px-4 py-3 space-y-1.5">
+                    <h3 className="font-semibold text-bfh-gray-dark">{p.title}</h3>
+                    {p.description && (
+                      <p className="text-sm text-bfh-gray-mid leading-relaxed">{p.description}</p>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="text-[11px] bg-bfh-gray-light text-bfh-gray-mid px-2 py-0.5 rounded">
+                        {OT_METHOD_LABELS[p.method] ?? p.method}
+                      </span>
+                      <span className="text-[11px] bg-bfh-gray-light text-bfh-gray-mid px-2 py-0.5 rounded">
+                        {p.language}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Supervisor requests list */}
+                  {p.supervisorRequests.length > 0 && (
+                    <div className="border-t border-bfh-gray-border px-4 py-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-bfh-gray-mid mb-2">
+                        Supervisor Requests ({p.supervisorRequests.length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {p.supervisorRequests.map((r: any) => (
+                          <div key={r.id} className="flex items-center gap-2 text-xs flex-wrap">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                              r.status === 'PENDING'  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                              : r.status === 'ACCEPTED' ? 'bg-green-50 border-green-200 text-green-700'
+                              : 'bg-bfh-gray-light border-bfh-gray-border text-bfh-gray-mid'
+                            }`}>{r.status}</span>
+                            <span className="font-medium text-bfh-gray-dark">{r.lecturer.name}</span>
+                            <span className="text-bfh-gray-mid">{r.lecturer.email}</span>
+                            {r.status === 'ACCEPTED' && r.specialisationFit !== null && (
+                              <span className={r.specialisationFit ? 'text-green-700' : 'text-amber-700'}>
+                                Fit: {r.specialisationFit ? 'Yes ✓' : 'Not confirmed'}
+                              </span>
+                            )}
+                            {r.responseNote && <span className="text-bfh-gray-mid italic">&ldquo;{r.responseNote}&rdquo;</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Admin manual assign — only for non-matched proposals */}
+                  {['DRAFT', 'SUBMITTED'].includes(p.status) && (
+                    <div className="border-t border-bfh-gray-border px-4 py-3 bg-amber-50">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 mb-2">
+                        Manual Assignment
+                      </p>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          className="input text-sm py-1.5 pr-8"
+                          placeholder="Search lecturer to assign…"
+                          value={otSearch[p.id] ?? ''}
+                          onChange={e => handleOtSearch(p.id, e.target.value)}
+                        />
+                        {otSearching === p.id && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-bfh-gray-mid text-xs">…</span>
+                        )}
+                        {(otResults[p.id]?.length ?? 0) > 0 && (
+                          <div className="absolute top-full left-0 right-0 mt-1 border border-bfh-gray-border rounded-lg bg-white shadow-sm z-10 overflow-hidden">
+                            {otResults[p.id].map((l: any) => (
+                              <div key={l.id} className="flex items-center gap-3 px-3 py-2 hover:bg-bfh-gray-light border-b border-bfh-gray-border last:border-0">
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium">{l.name}</div>
+                                  <div className="text-xs text-bfh-gray-mid">{l.email}</div>
+                                </div>
+                                <button
+                                  disabled={otAssigning === p.id}
+                                  onClick={() => assignSupervisor(p.id, l.id)}
+                                  className="shrink-0 text-xs btn-primary py-1 px-2.5 disabled:opacity-50"
+                                >
+                                  {otAssigning === p.id ? '…' : 'Assign'}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {otToast && (
+            <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${otToast.ok ? 'bg-green-600' : 'bg-red-600'}`}>
+              {otToast.msg}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Algorithm Matching Tab ── */}
+      {activeTab === 'matching' && <>
       {message && (
         <div className={`rounded-lg border px-4 py-3 text-sm font-medium ${message.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
           {message.text}
@@ -308,16 +586,17 @@ if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading
             {/* Workflow steps */}
             <div className="flex items-center gap-0 text-xs mb-5 overflow-x-auto">
               {[
-                { label: '1. Review data', done: true },
-                { label: '2. Approve', done: semester.matchingApproved },
-                { label: '3. Run matching', done: semester.matchingRun },
-                { label: '4. Send emails', done: semester.emailsSent },
+                { label: '1. Review data',     done: true },
+                { label: '2. Approve',         done: semester.matchingApproved },
+                { label: '3. Run matching',    done: semester.matchingRun },
+                { label: '4. Review & publish',done: semester.resultsPublished },
+                { label: '5. Send emails',     done: semester.emailsSent },
               ].map((step, i) => (
                 <div key={i} className="flex items-center">
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded ${step.done ? 'bg-green-100 text-green-700 font-medium' : 'bg-gray-100 text-gray-500'}`}>
                     <span>{step.done ? '✓' : '○'}</span> {step.label}
                   </div>
-                  {i < 3 && <div className="w-4 h-px bg-bfh-gray-border mx-1 shrink-0"/>}
+                  {i < 4 && <div className="w-4 h-px bg-bfh-gray-border mx-1 shrink-0"/>}
                 </div>
               ))}
             </div>
@@ -329,22 +608,35 @@ if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading
                   {approving ? 'Approving…' : '✓ Approve for Matching'}
                 </button>
               )}
-              {semester.matchingApproved && !semester.emailsSent && (
+              {semester.matchingApproved && (
                 <button onClick={handleRunMatching} disabled={running} className="btn-primary">
-                  {running ? 'Running…' : '▶ Run Matching Algorithm'}
+                  {running ? 'Running…' : semester.matchingRun ? '↺ Re-run Matching' : '▶ Run Matching Algorithm'}
                 </button>
               )}
-              {semester.matchingRun && !semester.emailsSent && (
+              {semester.matchingRun && !semester.resultsPublished && (
+                <button onClick={handlePublish} disabled={publishing} className="btn-primary">
+                  {publishing ? 'Publishing…' : '✅ Publish Results'}
+                </button>
+              )}
+              {semester.resultsPublished && !semester.emailsSent && (
                 <button onClick={handleSendEmails} disabled={sendingEmails} className="btn-primary">
                   {sendingEmails ? 'Sending…' : '✉ Send Result Emails'}
                 </button>
               )}
-              {semester.matchingRun && semester.matchingApproved && !semester.emailsSent && (
-                <button onClick={handleRunMatching} disabled={running} className="btn-secondary text-sm">
-                  ↺ Re-run Matching
+              {semester.matchingRun && (
+                <button onClick={handleReset} disabled={resetting} className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50">
+                  {resetting ? 'Resetting…' : '↺ Reset Matching'}
                 </button>
               )}
             </div>
+
+            {/* Admin-only preview notice */}
+            {semester.matchingRun && !semester.resultsPublished && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <span>⚠️</span>
+                <span><strong>Preview mode:</strong> Results are visible to admins only. Students and lecturers cannot see assignments until you publish.</span>
+              </div>
+            )}
           </div>
 
           {/* Manual Match Card — always available to admin */}
@@ -680,6 +972,7 @@ if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading
           )}
         </>
       )}
+      </>}
     </div>
   )
 }

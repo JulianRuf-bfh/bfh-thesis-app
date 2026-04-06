@@ -25,7 +25,6 @@ const navLinks: Record<string, { href: string; label: string }[]> = {
     { href: '/admin/topics',              label: 'Topics' },
     { href: '/admin/students',            label: 'Students' },
     { href: '/admin/matching',            label: 'Matching' },
-    { href: '/admin/own-topic-requests',  label: 'Topic Requests' },
     { href: '/admin/users',               label: 'Users' },
   ],
 }

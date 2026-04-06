@@ -1,9 +1,20 @@
+/**
+ * File deletion endpoint for thesis milestones.
+ *
+ * DELETE — removes a specific uploaded file from disk and database.
+ *          If no files remain for the milestone after deletion, the
+ *          milestone's submitted flag is automatically reverted to false.
+ *
+ * Access: the matched student, their supervisor, or an admin.
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { unlink } from 'fs/promises'
 import path from 'path'
 
+/** Maps milestone field names to their corresponding timestamp fields. */
 const DATE_FIELD: Record<string, string> = {
   proposalSubmitted:          'proposalSubmittedAt',
   midtermSubmitted:           'midtermSubmittedAt',
@@ -36,11 +47,12 @@ export async function DELETE(
 
   await prisma.thesisFile.delete({ where: { id: params.fileId } })
 
-  // If no remaining files for this milestone, revert the submitted flag
+  // If no remaining files for this milestone, revert the submitted flag.
+  // Only do this for known milestone fields to prevent dynamic key injection.
   const remaining = await prisma.thesisFile.count({
     where: { matchId: params.matchId, milestone: file.milestone },
   })
-  if (remaining === 0) {
+  if (remaining === 0 && DATE_FIELD[file.milestone]) {
     await prisma.thesisProgress.updateMany({
       where: { matchId: params.matchId },
       data: { [file.milestone]: false, [DATE_FIELD[file.milestone]]: null },

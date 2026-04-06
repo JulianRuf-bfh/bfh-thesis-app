@@ -1,3 +1,16 @@
+/**
+ * Admin semester management API.
+ *
+ * GET  — list all semesters with aggregate counts (topics, matches,
+ *        preferences, students with preferences).
+ * POST — create a new semester with deadlines.
+ *
+ * Semesters define the academic period and control deadlines for
+ * lecturer topic input and student preference submission.
+ * Only one semester can be active at a time (enforced by the PUT
+ * endpoint in [id]/route.ts).
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

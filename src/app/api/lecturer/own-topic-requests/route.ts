@@ -1,15 +1,19 @@
-// GET  — list all own-topic supervisor requests addressed to me
-// PATCH — accept or reject a single request
-//   body: { requestId, action: 'accept'|'reject', specialisationFit?: boolean, responseNote?: string }
-//
-// On ACCEPT:
-//   1. Check supervisor capacity (existing primary matches < supervisorCapacity)
-//   2. Create a Topic record from the student's proposal data (supervisor is lecturer)
-//   3. Create a Match record (matchedRank: 0 — same convention as manual/admin matches)
-//   4. Mark the OwnTopicRequest as MATCHED
-//   5. Auto-reject all other PENDING requests for this student's proposal
-//
-// This mirrors the pattern where admin manually creates a Match in the existing workflow.
+/**
+ * Lecturer own-topic supervisor request API.
+ *
+ * GET  — list all supervision requests addressed to the current lecturer
+ * PATCH — accept or reject a single request
+ *
+ * Accept workflow:
+ *   1. Verify supervisor capacity (existing primary matches < supervisorCapacity)
+ *   2. Verify student is not already matched
+ *   3. Create a Topic record from the student's proposal data
+ *   4. Create a Match record (matchedRank: 0 — manual/own-topic convention)
+ *   5. Mark the OwnTopicRequest as MATCHED
+ *   6. Auto-reject all other PENDING requests for this proposal
+ *
+ * All accept operations run in a single transaction for data consistency.
+ */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'

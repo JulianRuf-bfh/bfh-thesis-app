@@ -1,6 +1,21 @@
+/**
+ * Shared utility functions for the BFH Thesis application.
+ *
+ * Includes:
+ * - JSON field parsers (programmes, specialisations, methods)
+ * - Date formatting helpers (DE-CH locale)
+ * - Programme level detection
+ * - UI helpers (rank labels, className concatenation)
+ *
+ * Many Topic fields are stored as JSON strings in SQLite (since SQLite
+ * has no native array type). These parsers safely extract typed arrays
+ * from those strings, defaulting to empty arrays on invalid data.
+ */
+
 import type { Programme, Level, Method, BachelorProgramme, MasterProgramme } from '@/types'
 import { BACHELOR_PROGRAMMES, MASTER_PROGRAMMES } from '@/types'
 
+/** Parse a JSON-encoded programme array from the database. */
 export function parseProgrammes(json: string): Programme[] {
   try { return JSON.parse(json) } catch { return [] }
 }

@@ -1,7 +1,20 @@
+/**
+ * Co-supervisor management API for a specific match.
+ *
+ * GET    — list current co-supervisors for the match
+ * POST   — add a co-supervisor (validates: is a lecturer, not already added,
+ *           not the primary supervisor)
+ * DELETE — remove a co-supervisor from the match
+ *
+ * Only the primary supervisor (topic lecturer) or an admin can manage
+ * co-supervisors. Co-supervisors themselves can view but not modify.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+/** Verify the match exists and the caller is the primary supervisor or admin. */
 async function getMatchAndAuthorise(matchId: string, session: any) {
   const match = await prisma.match.findUnique({
     where:   { id: matchId },

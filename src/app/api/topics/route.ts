@@ -1,3 +1,16 @@
+/**
+ * Topic browse API — used by students and admins to view available topics.
+ *
+ * Returns active topics for the current semester with filtering support:
+ * - level: BACHELOR or MASTER (students are locked to their own level)
+ * - programme, specialisation: JSON-stored fields filtered in JS
+ * - language, lecturerId: direct DB filters
+ * - search: case-insensitive title/description search
+ *
+ * Each topic includes computed availableSlots based on the higher of
+ * current match count or preference count.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

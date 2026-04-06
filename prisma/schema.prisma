@@ -52,6 +52,7 @@ model Semester {
   isActive          Boolean  @default(false)
   matchingApproved  Boolean  @default(false) // admin approved → ready to run
   matchingRun       Boolean  @default(false) // algorithm has been executed
+  resultsPublished  Boolean  @default(false) // admin reviewed & published → visible to lecturers/students
   emailsSent        Boolean  @default(false) // results sent to students/lecturers
   createdAt         DateTime @default(now())
 

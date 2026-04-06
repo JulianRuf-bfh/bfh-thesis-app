@@ -1,3 +1,13 @@
+/**
+ * Admin dashboard statistics API.
+ *
+ * GET — returns aggregate stats for the active semester:
+ *   - Topic count, student count, students with preferences, match count
+ *   - Total student capacity across all active topics
+ *   - Topics broken down by level and programme
+ *   - Students broken down by programme
+ */
+
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'

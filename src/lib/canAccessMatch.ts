@@ -1,8 +1,19 @@
+/**
+ * Match access control helper.
+ *
+ * Centralised authorisation check used by progress, grading, and file endpoints
+ * to verify that the caller has a legitimate relationship to the match.
+ */
+
 import { prisma } from '@/lib/prisma'
 
 /**
- * Returns true if `userId` (with role `role`) is allowed to access this match's
- * progress data — i.e. is the student, first supervisor, or a co-supervisor.
+ * Returns true if the user is allowed to access this match's data.
+ * Access is granted to:
+ * - Admins (always)
+ * - The matched student
+ * - The primary supervisor (topic lecturer)
+ * - Any co-supervisor assigned to the match
  */
 export async function canAccessMatch(
   matchId: string,
