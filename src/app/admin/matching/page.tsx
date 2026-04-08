@@ -310,23 +310,33 @@ export default function AdminMatchingPage() {
 
   if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
 
-  // ── Progress dots ───────────────────────────────────────────────────────────
-  const PROGRESS_MILESTONES = [
-    { label: 'Proposal',      submitted: 'proposalSubmitted',          approved: 'proposalApproved',          rejected: 'proposalRejected' },
-    { label: 'Midterm',       submitted: 'midtermSubmitted',           approved: 'midtermApproved',           rejected: 'midtermRejected' },
-    { label: 'Final Thesis',  submitted: 'finalThesisSubmitted',       approved: 'finalThesisApproved',       rejected: 'finalThesisRejected' },
-    { label: 'Final Pres.',   submitted: 'finalPresentationSubmitted', approved: 'finalPresentationApproved', rejected: 'finalPresentationRejected' },
-  ] as const
+  // ── Progress dots — one dot per phase ──────────────────────────────────────
+  // Each dot represents one of the 4 phases. Color logic:
+  //   green  = phase fully complete
+  //   red    = at least one step rejected / rework requested
+  //   amber  = in progress (some steps done, not yet complete)
+  //   gray   = not started
+
+  type PhaseState = { cls: string; status: string; statusCls: string; detail: string }
+
+  function phaseState(p: Record<string, boolean> | null, done: boolean, rejected: boolean, inProgress: boolean, detail: string): PhaseState {
+    if (!p)         return { cls: 'bg-bfh-gray-border', status: 'Not started',  statusCls: 'text-bfh-gray-mid',  detail }
+    if (done)       return { cls: 'bg-green-500',        status: 'Complete',     statusCls: 'text-green-300',     detail }
+    if (rejected)   return { cls: 'bg-red-500',          status: 'Rework / rejected', statusCls: 'text-red-300', detail }
+    if (inProgress) return { cls: 'bg-amber-400',        status: 'In progress',  statusCls: 'text-amber-300',     detail }
+    return           { cls: 'bg-bfh-gray-border',        status: 'Not started',  statusCls: 'text-bfh-gray-mid',  detail }
+  }
 
   // eslint-disable-next-line no-inner-declarations
-  function TooltipDot({ cls, label, status, statusCls }: { cls: string; label: string; status: string; statusCls: string }) {
+  function TooltipDot({ cls, label, status, statusCls, detail }: { cls: string; label: string; status: string; statusCls: string; detail: string }) {
     return (
       <div className="relative group flex items-center">
         <span className={`w-2.5 h-2.5 rounded-full inline-block cursor-default ${cls}`} />
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-10 pointer-events-none">
           <div className="bg-bfh-gray-dark text-white text-[10px] font-medium rounded px-2 py-1 whitespace-nowrap shadow-lg">
-            <div>{label}</div>
+            <div className="font-semibold">{label}</div>
             <div className={statusCls}>{status}</div>
+            {detail && <div className="text-bfh-gray-mid mt-0.5">{detail}</div>}
           </div>
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-bfh-gray-dark" />
         </div>
@@ -335,19 +345,37 @@ export default function AdminMatchingPage() {
   }
 
   // eslint-disable-next-line no-inner-declarations
-  function ProgressDots({ progress }: { progress: Record<string, boolean> | null }) {
+  function ProgressDots({ progress: p }: { progress: Record<string, boolean> | null }) {
+    // Phase 1 — Kick-off (2 steps)
+    const p1Done = !!(p?.kickoffCompleted && p?.kickoffStudentConfirmed)
+    const p1Prog = !!(p?.kickoffCompleted || p?.kickoffStudentConfirmed)
+    const p1Steps = [p?.kickoffCompleted, p?.kickoffStudentConfirmed].filter(Boolean).length
+    const phase1 = phaseState(p, p1Done, false, p1Prog && !p1Done, `${p1Steps}/2 steps`)
+
+    // Phase 2 — Proposal (4 steps)
+    const p2Done = !!p?.proposalApproved
+    const p2Rej  = !!p?.proposalRejected
+    const p2Steps = [p?.proposalSubmitted, p?.proposalMeetingCompleted, p?.proposalMeetingStudentConfirmed, p?.proposalApproved].filter(Boolean).length
+    const phase2 = phaseState(p, p2Done, p2Rej, p2Steps > 0 && !p2Done, `${p2Steps}/4 steps`)
+
+    // Phase 3 — Midterm (4 steps)
+    const p3Done = !!p?.midtermApproved
+    const p3Rej  = !!(p?.midtermRejected || p?.midtermReflectionRejected)
+    const p3Steps = [p?.midtermSubmitted, p?.midtermMeetingCompleted, p?.midtermReflectionSubmitted, p?.midtermApproved].filter(Boolean).length
+    const phase3 = phaseState(p, p3Done, p3Rej, p3Steps > 0 && !p3Done, `${p3Steps}/4 steps`)
+
+    // Phase 4 — Final (4 steps)
+    const p4Done = !!(p?.finalThesisApproved && p?.finalPresentationApproved)
+    const p4Rej  = !!(p?.finalThesisRejected || p?.finalPresentationRejected)
+    const p4Steps = [p?.finalThesisSubmitted, p?.finalThesisApproved, p?.finalPresentationSubmitted, p?.finalPresentationApproved].filter(Boolean).length
+    const phase4 = phaseState(p, p4Done, p4Rej, p4Steps > 0 && !p4Done, `${p4Steps}/4 steps`)
+
     return (
       <div className="flex gap-1.5 items-center">
-        {PROGRESS_MILESTONES.map(m => {
-          const approved  = progress?.[m.approved]
-          const rejected  = progress?.[m.rejected]
-          const submitted = progress?.[m.submitted]
-          let cls = 'bg-bfh-gray-border'; let status = 'Not started'; let statusCls = 'text-bfh-gray-mid'
-          if (approved)       { cls = 'bg-green-500'; status = 'Approved';        statusCls = 'text-green-300' }
-          else if (rejected)  { cls = 'bg-red-500';   status = 'Rejected';        statusCls = 'text-red-300' }
-          else if (submitted) { cls = 'bg-amber-400'; status = 'Pending review';  statusCls = 'text-amber-300' }
-          return <TooltipDot key={m.label} cls={cls} label={m.label} status={status} statusCls={statusCls} />
-        })}
+        <TooltipDot cls={phase1.cls} label="Phase 1 · Kick-off"  status={phase1.status} statusCls={phase1.statusCls} detail={phase1.detail} />
+        <TooltipDot cls={phase2.cls} label="Phase 2 · Proposal"  status={phase2.status} statusCls={phase2.statusCls} detail={phase2.detail} />
+        <TooltipDot cls={phase3.cls} label="Phase 3 · Midterm"   status={phase3.status} statusCls={phase3.statusCls} detail={phase3.detail} />
+        <TooltipDot cls={phase4.cls} label="Phase 4 · Final"     status={phase4.status} statusCls={phase4.statusCls} detail={phase4.detail} />
       </div>
     )
   }
