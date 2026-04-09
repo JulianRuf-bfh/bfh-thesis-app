@@ -97,8 +97,17 @@ export async function GET(req: NextRequest) {
       },
       progress: {
         select: {
-          proposalSubmitted: true, proposalApproved: true, proposalRejected: true,
-          midtermSubmitted: true,  midtermApproved: true,  midtermRejected: true,
+          // Phase 1 — Kick-off
+          kickoffCompleted: true, kickoffStudentConfirmed: true,
+          // Phase 2 — Proposal
+          proposalSubmitted: true, proposalMeetingCompleted: true,
+          proposalMeetingStudentConfirmed: true,
+          proposalApproved: true, proposalRejected: true,
+          // Phase 3 — Midterm
+          midtermSubmitted: true, midtermMeetingCompleted: true,
+          midtermReflectionSubmitted: true, midtermReflectionRejected: true,
+          midtermApproved: true, midtermRejected: true,
+          // Phase 4 — Final
           finalThesisSubmitted: true, finalThesisApproved: true, finalThesisRejected: true,
           finalPresentationSubmitted: true, finalPresentationApproved: true, finalPresentationRejected: true,
         },
