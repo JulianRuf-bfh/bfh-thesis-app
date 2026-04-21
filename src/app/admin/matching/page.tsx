@@ -637,7 +637,7 @@ export default function AdminMatchingPage() {
                 </button>
               )}
               {semester.matchingApproved && (
-                <button onClick={handleRunMatching} disabled={running} className="btn-primary">
+                <button onClick={handleRunMatching} disabled={running} className={running ? 'btn-primary' : 'btn-secondary'}>
                   {running ? 'Running…' : semester.matchingRun ? '↺ Re-run Matching' : '▶ Run Matching Algorithm'}
                 </button>
               )}
@@ -652,7 +652,7 @@ export default function AdminMatchingPage() {
                 </span>
               )}
               {semester.resultsPublished && !semester.emailsSent && (
-                <button onClick={handleSendEmails} disabled={sendingEmails} className="btn-primary">
+                <button onClick={handleSendEmails} disabled={sendingEmails} className={sendingEmails ? 'btn-primary' : 'btn-secondary'}>
                   {sendingEmails ? 'Sending…' : '✉ Send Result Emails'}
                 </button>
               )}
