@@ -642,9 +642,14 @@ export default function AdminMatchingPage() {
                 </button>
               )}
               {semester.matchingRun && !semester.resultsPublished && (
-                <button onClick={handlePublish} disabled={publishing} className="btn-primary">
-                  {publishing ? 'Publishing…' : '✅ Publish Results'}
+                <button onClick={handlePublish} disabled={publishing} className={publishing ? 'btn-primary' : 'btn-secondary'}>
+                  {publishing ? 'Publishing…' : 'Publish Results'}
                 </button>
+              )}
+              {semester.resultsPublished && (
+                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-green-100 text-green-700 font-medium text-sm border border-green-200">
+                  ✓ Published
+                </span>
               )}
               {semester.resultsPublished && !semester.emailsSent && (
                 <button onClick={handleSendEmails} disabled={sendingEmails} className="btn-primary">
