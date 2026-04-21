@@ -2,6 +2,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { BFHLogo } from './BFHLogo'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +45,33 @@ function isActiveLink(
   return !allLinks.some(l => l.href !== href && l.href.length > href.length && pathname.startsWith(l.href))
 }
 
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <span className="w-7 h-7" />
+  const dark = resolvedTheme === 'dark'
+  return (
+    <button
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="w-7 h-7 flex items-center justify-center rounded hover:bg-bfh-gray-light transition-colors text-bfh-gray-mid hover:text-bfh-gray-dark"
+    >
+      {dark ? (
+        /* Sun icon */
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+      ) : (
+        /* Moon icon */
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      )}
+    </button>
+  )
+}
+
 export function Navigation() {
   const { data: session } = useSession()
   const pathname = usePathname()
@@ -53,7 +82,7 @@ export function Navigation() {
   const links = navLinks[role] ?? []
 
   return (
-    <header className="bg-white border-b border-bfh-gray-border shadow-sm sticky top-0 z-40">
+    <header className="bg-bfh-white border-b border-bfh-gray-border shadow-sm sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
@@ -91,6 +120,7 @@ export function Navigation() {
             <div className="h-8 w-8 rounded-full bg-bfh-yellow flex items-center justify-center text-bfh-gray-dark text-sm font-bold">
               {session.user.name?.charAt(0).toUpperCase()}
             </div>
+            <ThemeToggle />
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
               className="text-xs text-bfh-gray-mid hover:text-bfh-red transition-colors"

@@ -2,11 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Light mode (default) ───────────────────────────────────────────────── */
 :root {
-  --bfh-primary: #6B7D8C;   /* BFH slate gray */
-  --bfh-primary-dark: #4A5F70;
-  --bfh-yellow: #F5C200;    /* BFH golden yellow */
-  --bfh-yellow-light: #FFF8D6;
+  --bfh-primary:       #6B7D8C;
+  --bfh-primary-dark:  #4A5F70;
+  --bfh-primary-light: #EDF6FF;
+  --bfh-yellow:        #F5C200;
+  --bfh-yellow-light:  #FFF8D6;
+  --bfh-gray-dark:     #1A1A1A;
+  --bfh-gray-mid:      #666666;
+  --bfh-gray-light:    #F7F7F7;
+  --bfh-gray-border:   #E0E0E0;
+  --bfh-white:         #FFFFFF;
+}
+
+/* ── Dark mode overrides ────────────────────────────────────────────────── */
+html.dark {
+  --bfh-gray-dark:     #F0F0F0;   /* text  → light        */
+  --bfh-gray-mid:      #9CA3AF;   /* muted → medium gray  */
+  --bfh-gray-light:    #1F2937;   /* page bg → dark       */
+  --bfh-gray-border:   #374151;   /* borders → dark gray  */
+  --bfh-white:         #111827;   /* cards/inputs → dark  */
+  --bfh-primary-light: #1E2D3A;   /* tint bg → dark tint  */
+  --bfh-yellow-light:  #2A2510;   /* yellow tint → dark   */
 }
 
 @layer base {
@@ -30,7 +48,7 @@
 
   .btn-secondary {
     @apply inline-flex items-center justify-center px-4 py-2 rounded
-           border border-bfh-gray-border bg-white text-bfh-gray-dark font-medium text-sm
+           border border-bfh-gray-border bg-bfh-white text-bfh-gray-dark font-medium text-sm
            hover:bg-bfh-gray-light transition-colors
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
@@ -43,13 +61,13 @@
   }
 
   .card {
-    @apply bg-white rounded-lg border border-bfh-gray-border shadow-sm;
+    @apply bg-bfh-white rounded-lg border border-bfh-gray-border shadow-sm;
   }
 
   .input {
     @apply w-full px-3 py-2 rounded border border-bfh-gray-border text-sm
            focus:outline-none focus:ring-2 focus:ring-bfh-red focus:border-transparent
-           bg-white;
+           bg-bfh-white text-bfh-gray-dark;
   }
 
   .label {
