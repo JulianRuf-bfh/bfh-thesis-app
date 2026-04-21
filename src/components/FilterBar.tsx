@@ -1,44 +1,84 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   BACHELOR_PROGRAMMES, MASTER_PROGRAMMES, ALL_SPECIALISATIONS,
   PROGRAMME_LABELS, SPECIALISATION_LABELS, LANGUAGE_LABELS,
 } from '@/types'
 import type { TopicFilters, Level, Programme, Specialisation, Language } from '@/types'
 
+// ── DARK MODE FIXES ───────────────────────────────────────────────────────────
+//  · Level tabs: dark: variants for both active and inactive states
+//  · Toggle switch off-state: dark:bg-gray-600 (was bg-bfh-gray-border,
+//    near-invisible on dark gray backgrounds)
+//  · "Hide full topics" label: dark:text-gray-300
+//  · "Clear all filters": text-bfh-slate dark:text-gray-400
+//
+//  UX fix:
+//  · Search is now live (debounced 300ms) — "Press Enter to search" removed.
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface FilterBarProps {
   filters: TopicFilters
   onFiltersChange: (f: TopicFilters) => void
-  /** If set, limits which level tabs are shown */
   fixedLevel?: Level
   lecturers?: { id: string; name: string }[]
   showSearch?: boolean
 }
 
-export function FilterBar({ filters, onFiltersChange, fixedLevel, lecturers, showSearch }: FilterBarProps) {
+export function FilterBar({
+  filters,
+  onFiltersChange,
+  fixedLevel,
+  lecturers,
+  showSearch,
+}: FilterBarProps) {
   const [search, setSearch] = useState(filters.search ?? '')
 
-  const update = useCallback((patch: Partial<TopicFilters>) => {
-    onFiltersChange({ ...filters, ...patch })
-  }, [filters, onFiltersChange])
+  const update = useCallback(
+    (patch: Partial<TopicFilters>) => {
+      onFiltersChange({ ...filters, ...patch })
+    },
+    [filters, onFiltersChange]
+  )
+
+  // Live search — debounced 300ms (replaces "Press Enter to search")
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      update({ search: search || undefined })
+    }, 300)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
 
   const level = fixedLevel ?? filters.level
-  const programmes = level === 'BACHELOR' ? BACHELOR_PROGRAMMES : level === 'MASTER' ? MASTER_PROGRAMMES : [...BACHELOR_PROGRAMMES, ...MASTER_PROGRAMMES]
+  const programmes =
+    level === 'BACHELOR'
+      ? BACHELOR_PROGRAMMES
+      : level === 'MASTER'
+      ? MASTER_PROGRAMMES
+      : [...BACHELOR_PROGRAMMES, ...MASTER_PROGRAMMES]
 
   return (
     <div className="card p-4 space-y-4">
+
       {/* Level tabs — hidden if fixedLevel is set */}
       {!fixedLevel && (
         <div className="flex gap-2">
           {(['', 'BACHELOR', 'MASTER'] as const).map(l => (
             <button
               key={l}
-              onClick={() => update({ level: l as Level | undefined, programme: undefined, specialisation: undefined })}
-              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+              onClick={() =>
+                update({ level: l as Level | undefined, programme: undefined, specialisation: undefined })
+              }
+              className={
                 (filters.level ?? '') === l
-                  ? 'bg-bfh-red text-white'
-                  : 'bg-bfh-gray-light text-bfh-gray-mid hover:bg-bfh-gray-border'
-              }`}
+                  ? // Active tab — yellow, works in both modes
+                    'px-4 py-1.5 rounded text-sm font-semibold transition-colors bg-bfh-yellow text-bfh-gray-dark'
+                  : // Inactive tab
+                    'px-4 py-1.5 rounded text-sm font-medium transition-colors ' +
+                    'bg-bfh-gray-light text-bfh-gray-mid hover:bg-bfh-gray-border ' +
+                    'dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
+              }
             >
               {l === '' ? 'All' : l === 'BACHELOR' ? 'Bachelor' : 'Master'}
             </button>
@@ -46,6 +86,7 @@ export function FilterBar({ filters, onFiltersChange, fixedLevel, lecturers, sho
         </div>
       )}
 
+      {/* Filter dropdowns — .input class already has dark variants */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Programme */}
         <div>
@@ -53,27 +94,35 @@ export function FilterBar({ filters, onFiltersChange, fixedLevel, lecturers, sho
           <select
             className="input"
             value={filters.programme ?? ''}
-            onChange={e => update({ programme: (e.target.value as Programme) || undefined, specialisation: undefined })}
+            onChange={e =>
+              update({ programme: (e.target.value as Programme) || undefined, specialisation: undefined })
+            }
           >
             <option value="">All programmes</option>
             {programmes.map(p => (
-              <option key={p} value={p}>{p} – {PROGRAMME_LABELS[p]?.split('–')[1]?.trim()}</option>
+              <option key={p} value={p}>
+                {p} – {PROGRAMME_LABELS[p]?.split('–')[1]?.trim()}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* Specialisation — only for bachelor programmes */}
+        {/* Specialisation — only for bachelor */}
         {(level === 'BACHELOR' || BACHELOR_PROGRAMMES.includes(filters.programme as any)) && (
           <div>
             <label className="label">Specialisation</label>
             <select
               className="input"
               value={filters.specialisation ?? ''}
-              onChange={e => update({ specialisation: (e.target.value as Specialisation) || undefined })}
+              onChange={e =>
+                update({ specialisation: (e.target.value as Specialisation) || undefined })
+              }
             >
               <option value="">All specialisations</option>
               {ALL_SPECIALISATIONS.map(s => (
-                <option key={s} value={s}>{SPECIALISATION_LABELS[s]}</option>
+                <option key={s} value={s}>
+                  {SPECIALISATION_LABELS[s]}
+                </option>
               ))}
             </select>
           </div>
@@ -94,7 +143,7 @@ export function FilterBar({ filters, onFiltersChange, fixedLevel, lecturers, sho
           </select>
         </div>
 
-        {/* Lecturer */}
+        {/* Supervisor */}
         {lecturers && (
           <div>
             <label className="label">Supervisor</label>
@@ -112,19 +161,15 @@ export function FilterBar({ filters, onFiltersChange, fixedLevel, lecturers, sho
         )}
       </div>
 
-      {/* Search */}
+      {/* Live search — no Enter required */}
       {showSearch && (
-        <div>
-          <input
-            type="text"
-            className="input"
-            placeholder="Search topics by title or description…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && update({ search: search || undefined })}
-          />
-          <p className="text-xs text-bfh-gray-mid mt-1">Press Enter to search</p>
-        </div>
+        <input
+          type="text"
+          className="input"
+          placeholder="Search topics by title or description…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       )}
 
       {/* Hide full topics toggle */}
@@ -133,22 +178,37 @@ export function FilterBar({ filters, onFiltersChange, fixedLevel, lecturers, sho
           role="switch"
           aria-checked={!!filters.hideFullTopics}
           onClick={() => update({ hideFullTopics: !filters.hideFullTopics })}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none
-            ${filters.hideFullTopics ? 'bg-bfh-yellow' : 'bg-bfh-gray-border'}`}
+          className={[
+            'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none',
+            filters.hideFullTopics
+              ? 'bg-bfh-yellow'
+              : 'bg-bfh-gray-border dark:bg-gray-600',
+          ].join(' ')}
         >
           <span
-            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform
-              ${filters.hideFullTopics ? 'translate-x-4.5' : 'translate-x-0.5'}`}
+            className={[
+              'inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform',
+              filters.hideFullTopics ? 'translate-x-[18px]' : 'translate-x-0.5',
+            ].join(' ')}
           />
         </button>
-        <span className="text-sm text-bfh-gray-dark">Hide full topics</span>
+        <span className="text-sm text-bfh-gray-dark dark:text-gray-300">Hide full topics</span>
       </div>
 
-      {/* Active filters summary + reset */}
-      {(filters.level || filters.programme || filters.specialisation || filters.language || filters.lecturerId || filters.search || filters.hideFullTopics) && (
+      {/* Clear filters */}
+      {(filters.level ||
+        filters.programme ||
+        filters.specialisation ||
+        filters.language ||
+        filters.lecturerId ||
+        filters.search ||
+        filters.hideFullTopics) && (
         <button
-          onClick={() => { setSearch(''); onFiltersChange({}) }}
-          className="text-xs text-bfh-red hover:underline"
+          onClick={() => {
+            setSearch('')
+            onFiltersChange({})
+          }}
+          className="text-xs text-bfh-slate hover:underline dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
         >
           Clear all filters
         </button>

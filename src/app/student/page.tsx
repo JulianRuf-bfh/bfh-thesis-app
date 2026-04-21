@@ -5,6 +5,21 @@ import { TopicCard } from '@/components/TopicCard'
 import { FilterBar } from '@/components/FilterBar'
 import type { TopicFilters, TopicWithCount, PreferenceWithTopic } from '@/types'
 
+// ── DARK MODE FIXES ───────────────────────────────────────────────────────────
+//
+//  1. Preference summary bar: bg-bfh-yellow-light (#FFF8D6) is near-white,
+//     invisible on dark:bg-gray-900.
+//     Fixed: dark:bg-yellow-900/25 dark:border-yellow-700/50
+//
+//  2. Preference bar text: added dark:text-gray-100 / dark:text-gray-300.
+//
+//  3. Preference pills: redesigned as individual #N title tags instead of
+//     a single truncated joined string — easier to scan, better in dark mode.
+//
+//  4. Topic count, empty state, loading state: added dark:text-gray-400.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function StudentBrowsePage() {
   const { data: session } = useSession()
   const [topics, setTopics] = useState<TopicWithCount[]>([])
@@ -32,15 +47,16 @@ export default function StudentBrowsePage() {
     if (res.ok) {
       const data: TopicWithCount[] = await res.json()
       setTopics(data)
-      // Extract unique lecturers
       const seen = new Set<string>()
-      setLecturers(data.reduce((acc, t) => {
-        if (!seen.has(t.lecturerId)) {
-          seen.add(t.lecturerId)
-          acc.push({ id: t.lecturerId, name: t.lecturerName })
-        }
-        return acc
-      }, [] as { id: string; name: string }[]).sort((a, b) => a.name.localeCompare(b.name)))
+      setLecturers(
+        data.reduce((acc, t) => {
+          if (!seen.has(t.lecturerId)) {
+            seen.add(t.lecturerId)
+            acc.push({ id: t.lecturerId, name: t.lecturerName })
+          }
+          return acc
+        }, [] as { id: string; name: string }[]).sort((a, b) => a.name.localeCompare(b.name))
+      )
     }
     setLoading(false)
   }, [filters])
@@ -86,36 +102,58 @@ export default function StudentBrowsePage() {
 
   const prefMap = new Map(preferences.map(p => [p.topic.id, p.rank]))
   const studentLevel = session?.user.level as any
-  const visibleTopics = (filters.hideFullTopics
-    ? topics.filter(t => t.availableSlots > 0)
-    : topics
-  ).slice().sort((a, b) => {
-    const ra = prefMap.get(a.id) ?? Infinity
-    const rb = prefMap.get(b.id) ?? Infinity
-    return ra - rb   // selected topics (#1, #2, …) float to top; unselected stay in original order
-  })
+  const visibleTopics = (
+    filters.hideFullTopics ? topics.filter(t => t.availableSlots > 0) : topics
+  )
+    .slice()
+    .sort((a, b) => {
+      const ra = prefMap.get(a.id) ?? Infinity
+      const rb = prefMap.get(b.id) ?? Infinity
+      return ra - rb
+    })
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1>Browse Thesis Topics</h1>
-        <p className="text-sm text-bfh-gray-mid mt-1">
-          Select up to 4 topics as preferences. Your {studentLevel === 'BACHELOR' ? 'Bachelor' : 'Master'} topics are shown.
+        <p className="text-sm text-bfh-gray-mid dark:text-gray-400 mt-1">
+          Select up to 4 topics as preferences.{' '}
+          Your {studentLevel === 'BACHELOR' ? 'Bachelor' : 'Master'} topics are shown.
         </p>
       </div>
 
-      {/* Preference summary bar */}
+      {/* Preference summary bar
+          Fixed: bg-bfh-yellow-light was near-invisible on dark backgrounds. */}
       {preferences.length > 0 && (
-        <div className="bg-bfh-yellow-light border border-bfh-yellow rounded-lg px-4 py-3 flex items-center justify-between">
-          <div>
-            <span className="font-semibold text-bfh-gray-dark">{preferences.length}/4 preferences selected</span>
-            <span className="text-sm text-bfh-gray-mid ml-2">
-              {preferences.sort((a,b) => a.rank-b.rank).map(p => `#${p.rank} ${p.topic.title.substring(0,30)}…`).join(' | ')}
+        <div className={[
+          'rounded-lg px-4 py-3 flex items-center justify-between gap-3 border',
+          // Light — subtle yellow tint
+          'bg-bfh-yellow-light border-bfh-yellow',
+          // Dark — deeper yellow tint that reads on gray-900
+          'dark:bg-yellow-900/25 dark:border-yellow-700/50',
+        ].join(' ')}>
+          <div className="min-w-0">
+            <span className="font-semibold text-bfh-gray-dark dark:text-gray-100">
+              {preferences.length}/4 preferences selected
             </span>
+            {/* Individual tag pills — easier to scan than a truncated joined string */}
+            <div className="flex flex-wrap gap-1 mt-1">
+              {preferences
+                .slice()
+                .sort((a, b) => a.rank - b.rank)
+                .map(p => (
+                  <span
+                    key={p.topic.id}
+                    className="text-xs bg-white/60 dark:bg-gray-800/60 border border-bfh-yellow/40 dark:border-yellow-700/40 rounded px-1.5 py-0.5 text-bfh-gray-dark dark:text-gray-300"
+                  >
+                    #{p.rank} {p.topic.title.substring(0, 28)}{p.topic.title.length > 28 ? '…' : ''}
+                  </span>
+                ))}
+            </div>
           </div>
-          <a href="/student/preferences" className="btn-primary text-xs py-1.5">
-            Manage Preferences →
+          <a href="/student/my-thesis" className="btn-primary text-xs py-1.5 shrink-0">
+            Manage →
           </a>
         </div>
       )}
@@ -131,16 +169,34 @@ export default function StudentBrowsePage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all ${toast.ok ? 'bg-green-600' : 'bg-red-600'}`}>
+        <div className={[
+          'fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all',
+          toast.ok ? 'bg-green-600' : 'bg-red-600',
+        ].join(' ')}>
           {toast.msg}
         </div>
       )}
 
+      {/* Results count */}
+      {!loading && visibleTopics.length > 0 && (
+        <p className="text-sm text-bfh-gray-mid dark:text-gray-400">
+          {visibleTopics.length} topic{visibleTopics.length !== 1 ? 's' : ''} found
+          {filters.hideFullTopics && visibleTopics.length < topics.length && (
+            <span>
+              {' '}({topics.length - visibleTopics.length} full topic
+              {topics.length - visibleTopics.length !== 1 ? 's' : ''} hidden)
+            </span>
+          )}
+        </p>
+      )}
+
       {/* Topics grid */}
       {loading ? (
-        <div className="text-center py-12 text-bfh-gray-mid">Loading topics…</div>
+        <div className="text-center py-12 text-bfh-gray-mid dark:text-gray-400">
+          Loading topics…
+        </div>
       ) : visibleTopics.length === 0 ? (
-        <div className="card p-12 text-center text-bfh-gray-mid">
+        <div className="card p-12 text-center text-bfh-gray-mid dark:text-gray-400">
           <p className="font-medium">No topics found</p>
           <p className="text-sm mt-1">
             {filters.hideFullTopics && topics.length > 0
@@ -149,26 +205,18 @@ export default function StudentBrowsePage() {
           </p>
         </div>
       ) : (
-        <>
-          <p className="text-sm text-bfh-gray-mid">
-            {visibleTopics.length} topic{visibleTopics.length !== 1 ? 's' : ''} found
-            {filters.hideFullTopics && visibleTopics.length < topics.length &&
-              <span className="text-bfh-gray-mid"> ({topics.length - visibleTopics.length} full topic{topics.length - visibleTopics.length !== 1 ? 's' : ''} hidden)</span>
-            }
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visibleTopics.map(topic => (
-              <TopicCard
-                key={topic.id}
-                topic={topic}
-                currentRank={prefMap.get(topic.id)}
-                prefCount={preferences.length}
-                onAddPreference={addPreference}
-                onRemove={removePreference}
-              />
-            ))}
-          </div>
-        </>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {visibleTopics.map(topic => (
+            <TopicCard
+              key={topic.id}
+              topic={topic}
+              currentRank={prefMap.get(topic.id)}
+              prefCount={preferences.length}
+              onAddPreference={addPreference}
+              onRemove={removePreference}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
