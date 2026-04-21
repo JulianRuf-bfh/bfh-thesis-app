@@ -82,7 +82,7 @@ export function Navigation() {
   const links = navLinks[role] ?? []
 
   return (
-    <header className="bg-bfh-white border-b border-bfh-gray-border shadow-sm sticky top-0 z-40">
+    <header className="bg-white border-b border-bfh-gray-border shadow-sm sticky top-0 z-40 dark:bg-gray-900 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}

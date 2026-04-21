@@ -2,39 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Light mode (default) ───────────────────────────────────────────────── */
-:root {
-  --bfh-primary:       #6B7D8C;
-  --bfh-primary-dark:  #4A5F70;
-  --bfh-primary-light: #EDF6FF;
-  --bfh-yellow:        #F5C200;
-  --bfh-yellow-light:  #FFF8D6;
-  --bfh-gray-dark:     #1A1A1A;
-  --bfh-gray-mid:      #666666;
-  --bfh-gray-light:    #F7F7F7;
-  --bfh-gray-border:   #E0E0E0;
-  --bfh-white:         #FFFFFF;
-}
-
-/* ── Dark mode overrides ────────────────────────────────────────────────── */
-html.dark {
-  --bfh-gray-dark:     #F0F0F0;   /* text  → light        */
-  --bfh-gray-mid:      #9CA3AF;   /* muted → medium gray  */
-  --bfh-gray-light:    #1F2937;   /* page bg → dark       */
-  --bfh-gray-border:   #374151;   /* borders → dark gray  */
-  --bfh-white:         #111827;   /* cards/inputs → dark  */
-  --bfh-primary-light: #1E2D3A;   /* tint bg → dark tint  */
-  --bfh-yellow-light:  #2A2510;   /* yellow tint → dark   */
-}
-
 @layer base {
   body {
-    @apply bg-bfh-gray-light text-bfh-gray-dark font-sans;
+    @apply bg-bfh-gray-light text-bfh-gray-dark font-sans
+           dark:bg-gray-900 dark:text-gray-100;
   }
 
-  h1 { @apply text-2xl font-bold text-bfh-gray-dark; }
-  h2 { @apply text-xl font-semibold text-bfh-gray-dark; }
-  h3 { @apply text-lg font-semibold text-bfh-gray-dark; }
+  h1 { @apply text-2xl font-bold   text-bfh-gray-dark dark:text-gray-100; }
+  h2 { @apply text-xl  font-semibold text-bfh-gray-dark dark:text-gray-100; }
+  h3 { @apply text-lg  font-semibold text-bfh-gray-dark dark:text-gray-100; }
 }
 
 @layer components {
@@ -48,9 +24,10 @@ html.dark {
 
   .btn-secondary {
     @apply inline-flex items-center justify-center px-4 py-2 rounded
-           border border-bfh-gray-border bg-bfh-white text-bfh-gray-dark font-medium text-sm
+           border border-bfh-gray-border bg-white text-bfh-gray-dark font-medium text-sm
            hover:bg-bfh-gray-light transition-colors
-           disabled:opacity-50 disabled:cursor-not-allowed;
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700;
   }
 
   .btn-danger {
@@ -61,17 +38,20 @@ html.dark {
   }
 
   .card {
-    @apply bg-bfh-white rounded-lg border border-bfh-gray-border shadow-sm;
+    @apply bg-white rounded-lg border border-bfh-gray-border shadow-sm
+           dark:bg-gray-800 dark:border-gray-700;
   }
 
   .input {
     @apply w-full px-3 py-2 rounded border border-bfh-gray-border text-sm
            focus:outline-none focus:ring-2 focus:ring-bfh-red focus:border-transparent
-           bg-bfh-white text-bfh-gray-dark;
+           bg-white text-bfh-gray-dark
+           dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500;
   }
 
   .label {
-    @apply block text-sm font-medium text-bfh-gray-dark mb-1;
+    @apply block text-sm font-medium text-bfh-gray-dark mb-1
+           dark:text-gray-300;
   }
 
   .badge {
@@ -79,7 +59,8 @@ html.dark {
   }
 
   .table-container {
-    @apply overflow-x-auto rounded-lg border border-bfh-gray-border;
+    @apply overflow-x-auto rounded-lg border border-bfh-gray-border
+           dark:border-gray-700;
   }
 
   table {
@@ -87,15 +68,18 @@ html.dark {
   }
 
   thead {
-    @apply bg-bfh-gray-light border-b border-bfh-gray-border;
+    @apply bg-bfh-gray-light border-b border-bfh-gray-border
+           dark:bg-gray-800 dark:border-gray-700;
   }
 
   th {
-    @apply px-4 py-3 text-left text-xs font-semibold text-bfh-gray-mid uppercase tracking-wider;
+    @apply px-4 py-3 text-left text-xs font-semibold text-bfh-gray-mid uppercase tracking-wider
+           dark:text-gray-400;
   }
 
   td {
-    @apply px-4 py-3 text-bfh-gray-dark border-b border-bfh-gray-border;
+    @apply px-4 py-3 text-bfh-gray-dark border-b border-bfh-gray-border
+           dark:text-gray-200 dark:border-gray-700;
   }
 
   tr:last-child td {
@@ -103,6 +87,6 @@ html.dark {
   }
 
   tr:hover td {
-    @apply bg-bfh-gray-light;
+    @apply bg-bfh-gray-light dark:bg-gray-700;
   }
 }

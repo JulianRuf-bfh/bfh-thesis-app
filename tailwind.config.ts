@@ -11,19 +11,19 @@ const config: Config = {
     extend: {
       colors: {
         bfh: {
-          // Primary: BFH slate-gray (used for buttons, active elements, primary actions)
-          red:        'var(--bfh-primary)',
-          'red-dark': 'var(--bfh-primary-dark)',
-          'red-light': 'var(--bfh-primary-light)',
-          // Accent: BFH golden yellow (used for active-tab bg, logo, rank highlights)
-          yellow:        'var(--bfh-yellow)',
-          'yellow-light': 'var(--bfh-yellow-light)',
-          // Neutrals — all backed by CSS variables so dark mode works automatically
-          'gray-dark':   'var(--bfh-gray-dark)',
-          'gray-mid':    'var(--bfh-gray-mid)',
-          'gray-light':  'var(--bfh-gray-light)',
-          'gray-border': 'var(--bfh-gray-border)',
-          white:         'var(--bfh-white)',
+          // Primary: BFH slate-gray
+          red:          '#6B7D8C',
+          'red-dark':   '#4A5F70',
+          'red-light':  '#EDF6FF',
+          // Accent: BFH golden yellow
+          yellow:       '#F5C200',
+          'yellow-light': '#FFF8D6',
+          // Neutrals
+          'gray-dark':   '#1A1A1A',
+          'gray-mid':    '#666666',
+          'gray-light':  '#F7F7F7',
+          'gray-border': '#E0E0E0',
+          white:         '#FFFFFF',
         },
       },
       fontFamily: {
