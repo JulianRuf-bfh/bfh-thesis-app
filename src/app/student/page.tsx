@@ -86,9 +86,14 @@ export default function StudentBrowsePage() {
 
   const prefMap = new Map(preferences.map(p => [p.topic.id, p.rank]))
   const studentLevel = session?.user.level as any
-  const visibleTopics = filters.hideFullTopics
+  const visibleTopics = (filters.hideFullTopics
     ? topics.filter(t => t.availableSlots > 0)
     : topics
+  ).slice().sort((a, b) => {
+    const ra = prefMap.get(a.id) ?? Infinity
+    const rb = prefMap.get(b.id) ?? Infinity
+    return ra - rb   // selected topics (#1, #2, …) float to top; unselected stay in original order
+  })
 
   return (
     <div className="space-y-6">
