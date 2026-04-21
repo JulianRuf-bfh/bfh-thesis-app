@@ -40,7 +40,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <BFHLogo size="lg" />
+          <BFHLogo size="lg" variant="brand" />
         </div>
 
         <div className="card p-8">
