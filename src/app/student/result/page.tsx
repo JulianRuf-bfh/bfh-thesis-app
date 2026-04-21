@@ -20,7 +20,6 @@ export default function StudentResultPage() {
   if (!semester) {
     return (
       <div className="max-w-lg mx-auto mt-12 card p-8 text-center text-bfh-gray-mid">
-        <div className="text-4xl mb-3">📅</div>
         <h2 className="text-lg font-semibold mb-2">No active semester</h2>
         <p>There is no active semester at the moment. Please check back later.</p>
       </div>
@@ -30,7 +29,6 @@ export default function StudentResultPage() {
   if (!semester.matchingRun) {
     return (
       <div className="max-w-lg mx-auto mt-12 card p-8 text-center">
-        <div className="text-4xl mb-3">⏳</div>
         <h2 className="text-lg font-semibold mb-2">Matching not yet run</h2>
         <p className="text-bfh-gray-mid text-sm">
           The matching algorithm has not been run for <strong>{semester.name}</strong> yet.
@@ -43,7 +41,6 @@ export default function StudentResultPage() {
   if (!match) {
     return (
       <div className="max-w-lg mx-auto mt-12 card p-8 text-center">
-        <div className="text-4xl mb-3">❌</div>
         <h2 className="text-lg font-semibold text-red-700 mb-2">No match found</h2>
         <p className="text-bfh-gray-mid text-sm">Please contact <span className="font-medium">thesis-office@bfh.ch</span>.</p>
       </div>

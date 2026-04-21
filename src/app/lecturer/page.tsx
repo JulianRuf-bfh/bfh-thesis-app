@@ -114,7 +114,6 @@ export default function LecturerDashboard() {
         <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
       ) : topics.length === 0 ? (
         <div className="card p-12 text-center text-bfh-gray-mid">
-          <div className="text-4xl mb-3">📝</div>
           <p className="font-medium">No topics yet</p>
           <p className="text-sm mt-1">Add your first topic or import from a previous semester.</p>
           <div className="flex gap-2 justify-center mt-4">

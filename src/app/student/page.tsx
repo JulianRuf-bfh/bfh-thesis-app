@@ -141,7 +141,6 @@ export default function StudentBrowsePage() {
         <div className="text-center py-12 text-bfh-gray-mid">Loading topics…</div>
       ) : visibleTopics.length === 0 ? (
         <div className="card p-12 text-center text-bfh-gray-mid">
-          <div className="text-4xl mb-3">🔍</div>
           <p className="font-medium">No topics found</p>
           <p className="text-sm mt-1">
             {filters.hideFullTopics && topics.length > 0

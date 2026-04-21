@@ -42,10 +42,10 @@ type Progress = {
 
 // ── Phase definitions ─────────────────────────────────────────────────────────
 const PHASES = [
-  { id: 1, label: 'Kick-off',  icon: '🚀' },
-  { id: 2, label: 'Proposal',  icon: '📝' },
-  { id: 3, label: 'Midterm',   icon: '📊' },
-  { id: 4, label: 'Final',     icon: '🎓' },
+  { id: 1, label: 'Kick-off' },
+  { id: 2, label: 'Proposal' },
+  { id: 3, label: 'Midterm'  },
+  { id: 4, label: 'Final'    },
 ] as const
 
 // ── Milestone definitions ─────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ function FehlversuchModal({ onConfirm, onCancel }: { onConfirm: () => void; onCa
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
         <div className="flex items-start gap-3">
-          <div className="shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">⚠️</div>
+          <div className="shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-xl"></div>
           <div>
             <h2 className="font-bold text-bfh-gray-dark text-base">Official Start of Thesis Process</h2>
             <p className="text-xs text-bfh-gray-mid mt-0.5">Please read carefully before confirming</p>
@@ -164,7 +164,7 @@ function FileUploadArea({
     <div className={`rounded-lg border p-3 space-y-2 ${hasFile ? 'border-green-200 bg-green-50/40' : 'border-bfh-gray-border bg-white'}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className={`text-lg ${hasFile ? '✅' : '📎'}`}>{hasFile ? '✅' : '📎'}</span>
+          <span className={`text-lg ${hasFile ? '' : ''}`}>{hasFile ? '' : ''}</span>
           <span className="text-sm font-semibold text-bfh-gray-dark">{label}</span>
           {hasFile && <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded font-medium">Uploaded</span>}
         </div>
@@ -195,7 +195,7 @@ function FileUploadArea({
       {files.map((f, fi) => (
         <div key={f.id} className="flex items-center gap-2 bg-white rounded px-2 py-1.5 border border-bfh-gray-border">
           <span className="text-xs font-bold text-bfh-gray-mid w-5 shrink-0">#{fi + 1}</span>
-          <span className="text-base">📄</span>
+          <span className="text-base"></span>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
             <div className="text-[10px] text-bfh-gray-mid">{formatBytes(f.size)} · {formatDateTime(f.uploadedAt)}</div>
@@ -285,7 +285,6 @@ export default function StudentProgressPage() {
   if (noMatch) {
     return (
       <div className="max-w-lg mx-auto mt-12 card p-8 text-center text-bfh-gray-mid">
-        <div className="text-4xl mb-3">⏳</div>
         <p className="font-medium">No thesis assignment yet.</p>
         <a href="/student/result" className="btn-primary mt-4 inline-block text-sm">View My Result</a>
       </div>
@@ -339,7 +338,6 @@ export default function StudentProgressPage() {
                   ? 'bg-bfh-yellow/20 border-bfh-yellow text-bfh-gray-dark'
                   : 'bg-bfh-gray-light border-bfh-gray-border text-bfh-gray-mid'
             }`}>
-              <span>{phase.icon}</span>
               <span>{phase.id}. {phase.label}</span>
               <span className="opacity-70">{phase.completed}/{phase.total}</span>
             </div>
@@ -359,7 +357,6 @@ export default function StudentProgressPage() {
               phaseDone ? 'bg-green-50 border-green-200' : phaseStarted ? 'bg-bfh-yellow/10 border-bfh-yellow/40' : 'bg-bfh-gray-light border-bfh-gray-border'
             }`}>
               <div className="flex items-center gap-2">
-                <span className="text-lg">{phase.icon}</span>
                 <div>
                   <span className="text-xs font-semibold text-bfh-gray-mid uppercase tracking-wider">Phase {phase.id}</span>
                   <h3 className={`font-bold text-sm leading-tight ${phaseDone ? 'text-green-800' : 'text-bfh-gray-dark'}`}>
@@ -442,7 +439,7 @@ export default function StudentProgressPage() {
                           <div className={`rounded-lg border p-3 space-y-2 ${hasPresBeen ? 'border-green-200 bg-green-50/40' : 'border-bfh-gray-border bg-white'}`}>
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-base">{hasPresBeen ? '✅' : '🖥️'}</span>
+                                <span className="text-base">{hasPresBeen ? '' : ''}</span>
                                 <span className="text-sm font-semibold text-bfh-gray-dark">Presentation Slides</span>
                                 {hasPresBeen && <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded font-medium">Uploaded</span>}
                               </div>
@@ -461,7 +458,7 @@ export default function StudentProgressPage() {
                             {presFiles.map((f, fi) => (
                               <div key={f.id} className="flex items-center gap-2 bg-white rounded px-2 py-1.5 border border-bfh-gray-border">
                                 <span className="text-xs font-bold text-bfh-gray-mid w-5 shrink-0">#{fi + 1}</span>
-                                <span className="text-base">📄</span>
+                                <span className="text-base"></span>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
                                   <div className="text-[10px] text-bfh-gray-mid">{formatBytes(f.size)} · {formatDateTime(f.uploadedAt)}</div>
@@ -480,7 +477,7 @@ export default function StudentProgressPage() {
                           <div className={`rounded-lg border p-3 space-y-2 ${hasPaperBeen ? 'border-green-200 bg-green-50/40' : 'border-bfh-gray-border bg-white'}`}>
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-base">{hasPaperBeen ? '✅' : '📄'}</span>
+                                <span className="text-base">{hasPaperBeen ? '' : ''}</span>
                                 <span className="text-sm font-semibold text-bfh-gray-dark">Midterm Paper</span>
                                 {hasPaperBeen && <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded font-medium">Uploaded</span>}
                               </div>
@@ -499,7 +496,7 @@ export default function StudentProgressPage() {
                             {paperFiles.map((f, fi) => (
                               <div key={f.id} className="flex items-center gap-2 bg-white rounded px-2 py-1.5 border border-bfh-gray-border">
                                 <span className="text-xs font-bold text-bfh-gray-mid w-5 shrink-0">#{fi + 1}</span>
-                                <span className="text-base">📄</span>
+                                <span className="text-base"></span>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
                                   <div className="text-[10px] text-bfh-gray-mid">{formatBytes(f.size)} · {formatDateTime(f.uploadedAt)}</div>
@@ -651,7 +648,7 @@ export default function StudentProgressPage() {
                         {files.filter(f => f.milestone === m.key).map((f, fi) => (
                           <div key={f.id} className="flex items-center gap-2 bg-white rounded px-2 py-1.5 border border-bfh-gray-border">
                             <span className="text-xs font-bold text-bfh-gray-mid w-5 shrink-0">#{fi + 1}</span>
-                            <span className="text-base">📄</span>
+                            <span className="text-base"></span>
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
                               <div className="text-[10px] text-bfh-gray-mid">{formatBytes(f.size)} · {formatDateTime(f.uploadedAt)}</div>

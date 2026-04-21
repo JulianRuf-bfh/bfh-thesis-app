@@ -87,7 +87,7 @@ function PathChooser({ onChoose }: { onChoose: (p: 'algorithm' | 'own-topic') =>
           onClick={() => onChoose('algorithm')}
           className="card p-6 text-left hover:border-bfh-yellow hover:shadow-md transition-all group border-2 border-transparent"
         >
-          <div className="text-3xl mb-3">🎯</div>
+          <div className="text-3xl mb-3"></div>
           <h2 className="font-semibold text-bfh-gray-dark group-hover:text-bfh-gray-dark mb-1">
             Choose from offered topics
           </h2>
@@ -105,7 +105,7 @@ function PathChooser({ onChoose }: { onChoose: (p: 'algorithm' | 'own-topic') =>
           onClick={() => onChoose('own-topic')}
           className="card p-6 text-left hover:border-bfh-yellow hover:shadow-md transition-all group border-2 border-transparent"
         >
-          <div className="text-3xl mb-3">💡</div>
+          <div className="text-3xl mb-3"></div>
           <h2 className="font-semibold text-bfh-gray-dark group-hover:text-bfh-gray-dark mb-1">
             Propose your own topic
           </h2>
@@ -417,7 +417,7 @@ export default function StudentMyThesisPage() {
                              'bg-blue-50 border-blue-200 text-blue-700'
           }`}>
             {matchingRun
-              ? '🔒 The matching algorithm has been run. Your preferences are locked and can no longer be changed.'
+              ? 'The matching algorithm has been run. Your preferences are locked and can no longer be changed.'
               : deadlinePassed
               ? `Submission deadline has passed (${formatDate(semester.studentDeadline)}). Preferences are locked.`
               : `Deadline: ${formatDate(semester.studentDeadline)} — you can still change your preferences until then.`}
@@ -505,7 +505,7 @@ export default function StudentMyThesisPage() {
       {/* Status banners */}
       {proposal?.status === 'MATCHED' && (
         <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-800 text-sm font-medium flex items-center gap-2">
-          <span className="text-lg">🎉</span>
+          <span className="text-lg"></span>
           A supervisor has accepted your proposal! Track your progress under{' '}
           <a href="/student/progress" className="underline">Thesis Progress</a>.
         </div>

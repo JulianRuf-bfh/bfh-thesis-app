@@ -31,7 +31,6 @@ export default function AdminDashboard() {
 
       {!semester ? (
         <div className="card p-8 text-center text-bfh-gray-mid">
-          <div className="text-4xl mb-3">📅</div>
           <p className="font-medium">No active semester</p>
           <p className="text-sm mt-1">Create and activate a semester to get started.</p>
           <a href="/admin/semesters" className="btn-primary mt-4 inline-block text-sm">Manage Semesters</a>

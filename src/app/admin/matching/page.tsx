@@ -666,7 +666,7 @@ export default function AdminMatchingPage() {
             {/* Admin-only preview notice */}
             {semester.matchingRun && !semester.resultsPublished && (
               <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <span>⚠️</span>
+                <span></span>
                 <span><strong>Preview mode:</strong> Results are visible to admins only. Students and lecturers cannot see assignments until you publish.</span>
               </div>
             )}
@@ -730,7 +730,7 @@ export default function AdminMatchingPage() {
                         onClick={() => { setTopicMode(mode); setSelectedTopic(null); setTopicQ(''); setTopicResults([]); setNewTopicTitle(''); setNewTopicMethod(''); setNewTopicLanguage(''); setSelectedSup(null); setSupQ(''); setSupResults([]) }}
                         className={`text-xs px-3 py-1.5 rounded font-medium transition-colors ${topicMode === mode ? 'bg-white shadow-sm text-bfh-gray-dark' : 'text-bfh-gray-mid hover:text-bfh-gray-dark'}`}
                       >
-                        {mode === 'existing' ? '🔍 Use existing topic' : '✏️ Create new topic'}
+                        {mode === 'existing' ? 'Use existing topic' : '✏️ Create new topic'}
                       </button>
                     ))}
                   </div>

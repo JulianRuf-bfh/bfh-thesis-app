@@ -61,10 +61,10 @@ type GradingData = {
 
 // ── Phase definitions (identical to lecturer + student views) ─────────────────
 const PHASES = [
-  { id: 1, label: 'Kick-off', icon: '🚀' },
-  { id: 2, label: 'Proposal', icon: '📝' },
-  { id: 3, label: 'Midterm',  icon: '📊' },
-  { id: 4, label: 'Final',    icon: '🎓' },
+  { id: 1, label: 'Kick-off' },
+  { id: 2, label: 'Proposal' },
+  { id: 3, label: 'Midterm' },
+  { id: 4, label: 'Final' },
 ] as const
 
 // ── Milestone definitions — 14 steps, 4 phases (mirrors lecturer/student pages) ─
@@ -123,7 +123,7 @@ function formatBytes(b: number | null) {
 function FileRow({ f }: { f: FileRecord }) {
   return (
     <div className="flex items-center gap-2 bg-white rounded px-2 py-1.5 border border-bfh-gray-border">
-      <span className="text-base">📄</span>
+      <span className="text-base"></span>
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-bfh-gray-dark truncate">{f.originalName}</div>
         <div className="text-[10px] text-bfh-gray-mid">
@@ -297,7 +297,6 @@ export default function AdminMatchDetailPage() {
                     ? 'bg-bfh-yellow/20 border-bfh-yellow text-bfh-gray-dark'
                     : 'bg-bfh-gray-light border-bfh-gray-border text-bfh-gray-mid'
               }`}>
-                <span>{phase.icon}</span>
                 <span>{phase.id}. {phase.label}</span>
                 <span className="opacity-70">{phase.completed}/{phase.total}</span>
               </div>
@@ -317,7 +316,6 @@ export default function AdminMatchDetailPage() {
                 phaseDone ? 'bg-green-50 border-green-200' : phaseStarted ? 'bg-bfh-yellow/10 border-bfh-yellow/40' : 'bg-bfh-gray-light border-bfh-gray-border'
               }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{phase.icon}</span>
                   <div>
                     <span className="text-xs font-semibold text-bfh-gray-mid uppercase tracking-wider">Phase {phase.id}</span>
                     <h3 className={`font-bold text-sm leading-tight ${phaseDone ? 'text-green-800' : 'text-bfh-gray-dark'}`}>
@@ -400,7 +398,7 @@ export default function AdminMatchDetailPage() {
                             {presFiles.length > 0 && (
                               <div className="space-y-1.5">
                                 <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                                  🖥️ Presentation Slides
+                                  Presentation Slides
                                   {hasNewPres && <span className="text-amber-600 font-bold">· New</span>}
                                 </p>
                                 {presFiles.map(f => <FileRow key={f.id} f={f} />)}
@@ -409,7 +407,7 @@ export default function AdminMatchDetailPage() {
                             {paperFiles.length > 0 && (
                               <div className="space-y-1.5">
                                 <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                                  📄 Midterm Paper
+                                  Midterm Paper
                                   {hasNewPaper && <span className="text-amber-600 font-bold">· New</span>}
                                 </p>
                                 {paperFiles.map(f => <FileRow key={f.id} f={f} />)}

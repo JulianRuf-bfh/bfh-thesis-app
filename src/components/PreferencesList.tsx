@@ -48,7 +48,7 @@ export function PreferencesList({
   if (sorted.length === 0) {
     return (
       <div className="card p-8 text-center text-bfh-gray-mid">
-        <div className="text-4xl mb-3">📋</div>
+        <div className="text-4xl mb-3"></div>
         <p className="font-medium">No preferences selected yet</p>
         <p className="text-sm mt-1">Browse topics and add up to 4 to your preference list.</p>
       </div>

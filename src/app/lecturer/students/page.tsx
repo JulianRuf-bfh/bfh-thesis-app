@@ -97,7 +97,7 @@ function StudentTable({ matches, onSelect }: { matches: any[]; onSelect: (id: st
                     <td className="px-4 py-3">
                       {unseenFiles > 0 ? (
                         <span className="inline-flex items-center gap-1 text-xs font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full">
-                          📬 {unseenFiles} new
+                          {unseenFiles} new
                         </span>
                       ) : m.files?.length > 0 ? (
                         <span className="text-xs text-bfh-gray-mid">{m.files.length} file{m.files.length !== 1 ? 's' : ''}</span>
@@ -146,7 +146,6 @@ export default function LecturerStudentsPage() {
   if (total === 0) {
     return (
       <div className="max-w-lg mx-auto mt-12 card p-10 text-center text-bfh-gray-mid">
-        <div className="text-4xl mb-3">🎓</div>
         <h2 className="text-lg font-semibold mb-2">No students assigned yet</h2>
         <p className="text-sm">Once the matching algorithm has run, your assigned students will appear here.</p>
       </div>
@@ -164,7 +163,7 @@ export default function LecturerStudentsPage() {
         </div>
         {totalUnseen > 0 && (
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium px-3 py-2 rounded-lg">
-            <span className="text-base">📬</span>
+            <span className="text-base"></span>
             {totalUnseen} new upload{totalUnseen !== 1 ? 's' : ''}
           </div>
         )}
