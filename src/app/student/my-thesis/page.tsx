@@ -460,7 +460,8 @@ export default function StudentMyThesisPage() {
 
   // ── Own-topic path ────────────────────────────────────────────────────────
 
-  const isLocked = proposal?.status === 'MATCHED' || proposal?.status === 'WITHDRAWN'
+  // WITHDRAWN is intentionally NOT locked — the banner tells the student to fill in the form again
+  const isLocked = proposal?.status === 'MATCHED'
   const canSwitchToAlgorithm = !proposal || proposal.status === 'WITHDRAWN' ||
     (proposal.status === 'DRAFT' && (proposal.supervisorRequests?.length ?? 0) === 0)
   const alreadyRequested = new Set(

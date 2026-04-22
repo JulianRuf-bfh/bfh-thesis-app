@@ -61,10 +61,11 @@ export async function POST(req: NextRequest) {
   const semester = await prisma.semester.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } })
   if (!semester) return NextResponse.json({ error: 'No active semester' }, { status: 400 })
 
-  // Cannot edit a proposal that is already MATCHED or WITHDRAWN
+  // Cannot edit a proposal that is already MATCHED.
+  // WITHDRAWN is allowed — the student is re-submitting a new proposal.
   const existing = await prisma.ownTopicRequest.findUnique({ where: { studentId: session.user.id } })
-  if (existing && ['MATCHED', 'WITHDRAWN'].includes(existing.status)) {
-    return NextResponse.json({ error: `Cannot edit a proposal with status ${existing.status}` }, { status: 400 })
+  if (existing?.status === 'MATCHED') {
+    return NextResponse.json({ error: 'Cannot edit a matched proposal' }, { status: 400 })
   }
 
   const proposal = await prisma.ownTopicRequest.upsert({
@@ -83,6 +84,9 @@ export async function POST(req: NextRequest) {
       description: description?.trim() ?? null,
       method,
       language,
+      // Re-activate if previously withdrawn, and bind to the current semester
+      status:     'DRAFT',
+      semesterId: semester.id,
     },
     include: {
       supervisorRequests: {
