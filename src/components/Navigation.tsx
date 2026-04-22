@@ -22,12 +22,13 @@ const navLinks: Record<string, { href: string; label: string }[]> = {
     { href: '/lecturer/import',             label: 'Import Previous' },
   ],
   ADMIN: [
-    { href: '/admin',           label: 'Dashboard' },
-    { href: '/admin/semesters', label: 'Semesters' },
-    { href: '/admin/topics',    label: 'Topics' },
-    { href: '/admin/students',  label: 'Students' },
-    { href: '/admin/matching',  label: 'Matching' },
-    { href: '/admin/users',     label: 'Users' },
+    { href: '/admin',                     label: 'Dashboard' },
+    { href: '/admin/semesters',           label: 'Semesters' },
+    { href: '/admin/topics',              label: 'Topics' },
+    { href: '/admin/students',            label: 'Students' },
+    { href: '/admin/matching',            label: 'Matching' },
+    { href: '/admin/own-topic-requests',  label: 'Own Topics' },
+    { href: '/admin/users',               label: 'Users' },
   ],
 }
 

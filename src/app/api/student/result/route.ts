@@ -41,11 +41,14 @@ export async function GET() {
     },
   })
 
-  // Students only see their result once admin has published results
-  const visibleMatch = semester.resultsPublished ? match : null
+  // Own-topic matches (matchedRank === 0) are visible immediately — the lecturer
+  // personally accepted, so no need to wait for admin to publish bulk results.
+  const isOwnTopic = match?.matchedRank === 0
+  const visibleMatch = (semester.resultsPublished || isOwnTopic) ? match : null
 
   return NextResponse.json({
     semester: { id: semester.id, name: semester.name, matchingRun: semester.matchingRun, emailsSent: semester.emailsSent, resultsPublished: semester.resultsPublished },
+    isOwnTopic,
     match: visibleMatch
       ? {
           id: visibleMatch.id,

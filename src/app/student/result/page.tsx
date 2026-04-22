@@ -15,7 +15,7 @@ export default function StudentResultPage() {
 
   if (loading) return <div className="text-center py-12 text-bfh-gray-mid">Loading…</div>
 
-  const { semester, match } = data ?? {}
+  const { semester, match, isOwnTopic } = data ?? {}
 
   if (!semester) {
     return (
@@ -26,14 +26,15 @@ export default function StudentResultPage() {
     )
   }
 
-  if (!semester.matchingRun) {
+  // Own-topic students skip the matchingRun gate — their match was accepted directly by the lecturer
+  if (!semester.matchingRun && !isOwnTopic) {
     return (
       <div className="max-w-lg mx-auto mt-12 card p-8 text-center">
         <h2 className="text-lg font-semibold mb-2">Matching not yet run</h2>
         <p className="text-bfh-gray-mid text-sm">
           The matching algorithm has not been run for <strong>{semester.name}</strong> yet.
         </p>
-        <a href="/student/preferences" className="btn-primary mt-4 inline-block text-sm">Review My Preferences</a>
+        <a href="/student/my-thesis" className="btn-primary mt-4 inline-block text-sm">Review My Preferences</a>
       </div>
     )
   }
@@ -58,8 +59,8 @@ export default function StudentResultPage() {
       <div className="card p-6 border-l-4 border-l-bfh-red">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <div className="text-xs font-semibold text-bfh-red uppercase tracking-wider mb-1">
-              Matched – {rankLabel(match.matchedRank)}
+            <div className="text-xs font-semibold text-bfh-slate uppercase tracking-wider mb-1">
+              {isOwnTopic ? 'Direct match — Own Topic' : `Matched – ${rankLabel(match.matchedRank)}`}
             </div>
             <h2 className="text-lg font-bold text-bfh-gray-dark leading-snug">{match.topicTitle}</h2>
           </div>

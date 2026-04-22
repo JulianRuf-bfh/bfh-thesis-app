@@ -35,14 +35,19 @@ export async function GET() {
     where: { isActive: true },
     select: { resultsPublished: true },
   })
-  if (session.user.role === 'LECTURER' && !activeSemester?.resultsPublished) {
-    return NextResponse.json({ primary: [], co: [], published: false })
-  }
+  // Own-topic matches (matchedRank === 0) are always visible to the lecturer who accepted them —
+  // they personally agreed to supervise, no need to wait for admin to publish bulk results.
+  const resultsPublished = activeSemester?.resultsPublished ?? false
 
   const [primaryMatches, coMatches] = await Promise.all([
-    // Matches where I am the first supervisor
     prisma.match.findMany({
-      where:   { topic: { lecturerId: session.user.id } },
+      where: {
+        topic: { lecturerId: session.user.id },
+        // When results not published yet: only show own-topic matches (matchedRank 0)
+        ...(session.user.role === 'LECTURER' && !resultsPublished
+          ? { matchedRank: 0 }
+          : {}),
+      },
       include: MATCH_INCLUDE,
       orderBy: { matchedAt: 'asc' },
     }),
@@ -57,6 +62,6 @@ export async function GET() {
   return NextResponse.json({
     primary: primaryMatches,
     co:      coMatches,
-    published: activeSemester?.resultsPublished ?? false,
+    published: resultsPublished,
   })
 }
