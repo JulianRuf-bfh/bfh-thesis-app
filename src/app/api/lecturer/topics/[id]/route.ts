@@ -34,12 +34,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Enforce the lecturer input deadline (admins are exempt)
-  const semester = await prisma.semester.findUnique({ where: { id: topic.semesterId } })
-  if (semester && new Date() > semester.lecturerDeadline && session!.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Lecturer input deadline has passed' }, { status: 400 })
-  }
-
   const body = await req.json()
   const { title, description, methods, language, level, programmes, specialisations, maxStudents, isActive } = body
 

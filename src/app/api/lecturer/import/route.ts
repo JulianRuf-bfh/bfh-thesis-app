@@ -63,10 +63,6 @@ export async function POST(req: NextRequest) {
   })
   if (!semester) return NextResponse.json({ error: 'No active semester' }, { status: 400 })
 
-  if (new Date() > semester.lecturerDeadline) {
-    return NextResponse.json({ error: 'Lecturer deadline has passed' }, { status: 400 })
-  }
-
   const source = await prisma.topic.findMany({
     where: { id: { in: topicIds }, lecturerId: session.user.id },
   })

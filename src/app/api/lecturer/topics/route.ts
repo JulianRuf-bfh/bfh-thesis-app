@@ -85,10 +85,7 @@ export async function POST(req: NextRequest) {
   })
   if (!semester) return NextResponse.json({ error: 'No active semester' }, { status: 400 })
 
-  // ── Deadline and lock checks ─────────────────────────────────────────────
-  if (new Date() > semester.lecturerDeadline && session!.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Lecturer input deadline has passed' }, { status: 400 })
-  }
+  // ── Lock check ───────────────────────────────────────────────────────────
   if (semester.matchingRun) {
     return NextResponse.json({ error: 'Matching has already been run — topics are locked' }, { status: 400 })
   }
