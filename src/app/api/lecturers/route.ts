@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-/** Search for lecturers by name or email (used for co-supervisor picker). */
+/** Search for lecturers by name or email (used for co-supervisor picker and student own-topic requests). */
 export async function GET(req: NextRequest) {
   const session = await getAuth()
-  if (!session || !['LECTURER', 'ADMIN'].includes(session.user.role)) {
+  if (!session || !['STUDENT', 'LECTURER', 'ADMIN'].includes(session.user.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
