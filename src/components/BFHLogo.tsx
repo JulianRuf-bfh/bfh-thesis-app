@@ -68,16 +68,19 @@ function BFHMark({ width, height }: { width: number; height: number }) {
 
 export function BFHLogo({ size = 'md', variant = 'full' }: BFHLogoProps) {
   if (variant === 'brand') {
-    // Login page — stacked SVG mark + text, works in both modes
+    // Login page — official PNG (B-mark + "Berner Fachhochschule") above app title
+    // dark:brightness-[1.8] keeps the gray mark visible on dark backgrounds
     return (
-      <Link href="/" className="inline-flex flex-col items-center gap-3 hover:opacity-90 transition-opacity">
-        <BFHMark width={markSizes.lg.width} height={markSizes.lg.height} />
+      <Link href="/" className="inline-flex flex-col items-center gap-4 hover:opacity-90 transition-opacity">
+        <img
+          src="/bfh-logo.png"
+          alt="Berner Fachhochschule"
+          style={{ height: '90px', width: 'auto' }}
+          className="dark:brightness-[1.8]"
+        />
         <div className="text-center leading-tight">
-          <div className="text-base font-bold text-bfh-gray-dark dark:text-gray-100">
+          <div className="text-lg font-bold text-bfh-gray-dark dark:text-gray-100">
             Thesis Distribution
-          </div>
-          <div className="text-xs text-bfh-gray-mid dark:text-gray-400 mt-0.5">
-            Berner Fachhochschule
           </div>
         </div>
       </Link>
