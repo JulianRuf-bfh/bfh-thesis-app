@@ -636,13 +636,13 @@ export default function StudentProgressPage() {
                           </button>
                         </>
                       )}
-                      {isStudent && !canUpload && m.key !== 'midtermSubmitted' && (
+                      {isStudent && !canUpload && (
                         <input ref={el => { fileRefs.current[m.key] = el }} type="file" className="hidden" />
                       )}
                     </div>
 
-                    {/* Upload history (for standard upload steps, not midtermSubmitted) */}
-                    {m.key !== 'midtermSubmitted' && files.filter(f => f.milestone === m.key).length > 0 && (
+                    {/* Upload history */}
+                    {files.filter(f => f.milestone === m.key).length > 0 && (
                       <div className="border-t border-bfh-gray-border mx-4 mb-3 pt-2 space-y-1.5">
                         <p className="text-[10px] text-bfh-gray-mid font-semibold uppercase tracking-wider mb-1">Upload history</p>
                         {files.filter(f => f.milestone === m.key).map((f, fi) => (

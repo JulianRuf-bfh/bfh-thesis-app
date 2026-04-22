@@ -404,8 +404,8 @@ export default function AdminMatchingPage() {
 
     return (
       <div className="flex gap-1.5 items-center">
-        <TooltipDot cls={mainCls} label="Main Grading" status={mainStatus} statusCls={mainStatusCls} />
-        <TooltipDot cls={aolCls}  label="AoL Assessment" status={aolStatus} statusCls={aolStatusCls} />
+        <TooltipDot cls={mainCls} label="Main Grading"    status={mainStatus} statusCls={mainStatusCls} detail="" />
+        <TooltipDot cls={aolCls}  label="AoL Assessment" status={aolStatus}  statusCls={aolStatusCls}  detail="" />
       </div>
     )
   }
