@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true })
 }
 
-/** Reset matching — deletes algorithm matches (rank > 0), preserves manual (rank = 0). */
+/** Reset matching — deletes all matches and unwinds own-topic accept state. */
 export async function DELETE(req: NextRequest) {
   const session = await getAuth()
   if (!requireAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -50,14 +50,54 @@ export async function DELETE(req: NextRequest) {
   const semester = await prisma.semester.findUnique({ where: { id: semesterId } })
   if (!semester) return NextResponse.json({ error: 'Semester not found' }, { status: 404 })
 
-  // Delete only algorithm-generated matches (matchedRank > 0), keep manual matches (matchedRank = 0)
-  await prisma.$transaction([
-    prisma.match.deleteMany({ where: { semesterId, matchedRank: { gt: 0 } } }),
-    prisma.semester.update({
+  await prisma.$transaction(async (tx) => {
+    // 1. Find own-topic proposals that were matched — their topics were auto-created on accept
+    //    and need to be deleted (unlike regular lecturer topics which must be preserved).
+    const matchedOwnTopics = await tx.ownTopicRequest.findMany({
+      where:  { semesterId, status: 'MATCHED' },
+      select: { id: true, studentId: true },
+    })
+    const autoCreatedTopicIds: string[] = []
+    if (matchedOwnTopics.length > 0) {
+      const ownTopicMatches = await tx.match.findMany({
+        where: {
+          semesterId,
+          matchedRank: 0,
+          studentId: { in: matchedOwnTopics.map(r => r.studentId) },
+        },
+        select: { topicId: true },
+      })
+      autoCreatedTopicIds.push(...ownTopicMatches.map(m => m.topicId))
+    }
+
+    // 2. Delete ALL matches for the semester (cascades to Progress, Grading, Files, CoSupervisors)
+    await tx.match.deleteMany({ where: { semesterId } })
+
+    // 3. Delete auto-created topics (created when lecturer accepted an own-topic request)
+    if (autoCreatedTopicIds.length > 0) {
+      await tx.topic.deleteMany({ where: { id: { in: autoCreatedTopicIds } } })
+    }
+
+    // 4. Reset own-topic proposal statuses back to SUBMITTED so students can request again
+    if (matchedOwnTopics.length > 0) {
+      await tx.ownTopicRequest.updateMany({
+        where: { semesterId, status: 'MATCHED' },
+        data:  { status: 'SUBMITTED' },
+      })
+      // Reset the accepted supervisor request back to PENDING
+      const requestIds = matchedOwnTopics.map(r => r.id)
+      await tx.ownTopicSupervisorRequest.updateMany({
+        where: { ownTopicRequestId: { in: requestIds }, status: 'ACCEPTED' },
+        data:  { status: 'PENDING', respondedAt: null, responseNote: null },
+      })
+    }
+
+    // 5. Reset semester matching flags
+    await tx.semester.update({
       where: { id: semesterId },
-      data: { matchingRun: false, resultsPublished: false, emailsSent: false },
-    }),
-  ])
+      data:  { matchingRun: false, resultsPublished: false, emailsSent: false },
+    })
+  })
 
   return NextResponse.json({ ok: true })
 }
