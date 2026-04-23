@@ -198,8 +198,12 @@ export async function GET(req: NextRequest) {
         ]
         let gMap: Record<string, any> = {}
         let aMap: Record<string, any> = {}
-        try { gMap = JSON.parse(m.grading.gradingJson) } catch {}
-        try { aMap = JSON.parse(m.grading.aolJson) } catch {}
+        try { gMap = JSON.parse(m.grading.gradingJson) } catch (e) {
+          console.error(`[admin/matching] Failed to parse gradingJson for match ${m.id}:`, e)
+        }
+        try { aMap = JSON.parse(m.grading.aolJson) } catch (e) {
+          console.error(`[admin/matching] Failed to parse aolJson for match ${m.id}:`, e)
+        }
         const mainScored  = CRITERIA.filter(id => gMap[id]?.score != null).length
         const aolFilled   = AOL_DIMS.reduce((sum, d) => {
           const arr: (number|null)[] = aMap[d.id] ?? []

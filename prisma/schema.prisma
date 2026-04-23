@@ -85,6 +85,9 @@ model Topic {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([semesterId])
+  @@index([lecturerId])
 }
 
 model Preference {
@@ -103,6 +106,9 @@ model Preference {
 
   @@unique([studentId, rank, semesterId])
   @@unique([studentId, topicId, semesterId])
+  @@index([semesterId])
+  @@index([studentId])
+  @@index([topicId])
 }
 
 model Match {
@@ -121,6 +127,9 @@ model Match {
   grading       ThesisGrading?
   files         ThesisFile[]
   coSupervisors MatchCoSupervisor[]
+
+  @@index([semesterId])
+  @@index([topicId])
 }
 
 model MatchCoSupervisor {
@@ -218,6 +227,8 @@ model ThesisFile {
   size            Int?
   seenByLecturer  Boolean  @default(false)
   uploadedAt      DateTime @default(now())
+
+  @@index([matchId])
 }
 
 // ─── Own-Topic ("Eigenes Thema") workflow ────────────────────────────────────
@@ -250,6 +261,8 @@ model OwnTopicRequest {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([semesterId])
 }
 
 model OwnTopicSupervisorRequest {
@@ -271,4 +284,5 @@ model OwnTopicSupervisorRequest {
 
   // A student can only request the same supervisor once per proposal
   @@unique([ownTopicRequestId, lecturerId])
+  @@index([lecturerId])
 }

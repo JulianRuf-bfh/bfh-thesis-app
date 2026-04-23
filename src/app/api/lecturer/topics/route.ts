@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { parseProgrammes, parseSpecialisations, parseMethods } from '@/lib/utils'
+import { rateLimit, RATE_LIMITS } from '@/lib/rateLimit'
 
 /** Allow lecturers and admins to manage topics. */
 function requireLecturer(session: Awaited<ReturnType<typeof getAuth>>) {
@@ -58,6 +59,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getAuth()
   if (!requireLecturer(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(`api:${session!.user.id}`, RATE_LIMITS.api)
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
 
   const body = await req.json()
   const {
