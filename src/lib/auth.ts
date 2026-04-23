@@ -5,6 +5,24 @@ import { compare } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { rateLimit, RATE_LIMITS } from '@/lib/rateLimit'
 
+// ── Startup assertions ────────────────────────────────────────────────────────
+// Fail loudly at boot rather than silently 500-ing on the first authenticated
+// request. Only enforced in production — dev can be noisier.
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error(
+      '[auth] NEXTAUTH_SECRET is required in production. ' +
+      'Generate one with `openssl rand -base64 32` and set it on your host.'
+    )
+  }
+  if (!process.env.NEXTAUTH_URL) {
+    throw new Error(
+      '[auth] NEXTAUTH_URL is required in production. ' +
+      'Set it to your full public URL (e.g. https://example.up.railway.app).'
+    )
+  }
+}
+
 declare module 'next-auth' {
   interface Session {
     user: {

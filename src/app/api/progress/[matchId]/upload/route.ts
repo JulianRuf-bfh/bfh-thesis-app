@@ -28,6 +28,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rateLimit'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
+import { getMatchUploadsDir } from '@/lib/uploadsDir'
 
 /** Maps standard milestone keys → their Progress boolean timestamp fields. */
 const DATE_FIELD: Record<string, string> = {
@@ -170,7 +171,7 @@ export async function POST(req: Request, { params }: { params: { matchId: string
   }
 
   // ── Save file to disk ─────────────────────────────────────────────────────
-  const uploadsDir = path.join(process.cwd(), 'uploads', params.matchId)
+  const uploadsDir = getMatchUploadsDir(params.matchId)
   const storedName = `${randomUUID()}${ext}`
   try {
     await mkdir(uploadsDir, { recursive: true })

@@ -54,9 +54,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const updated = await prisma.$transaction(async (tx) => {
     // Re-check capacity inside the transaction if maxStudents changed
-    if (maxStudents !== undefined && maxStudents !== topic.maxStudents && semester) {
+    if (maxStudents !== undefined && maxStudents !== topic.maxStudents) {
       const others = await tx.topic.findMany({
-        where: { lecturerId: session!.user.id, semesterId: semester.id, isActive: true, id: { not: params.id } },
+        where: { lecturerId: session!.user.id, semesterId: topic.semesterId, isActive: true, id: { not: params.id } },
         select: { maxStudents: true },
       })
       const othersTotal = others.reduce((s, t) => s + t.maxStudents, 0)

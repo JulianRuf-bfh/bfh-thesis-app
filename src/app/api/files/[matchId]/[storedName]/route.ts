@@ -16,6 +16,7 @@ import { canAccessMatch } from '@/lib/canAccessMatch'
 import { rateLimit, RATE_LIMITS } from '@/lib/rateLimit'
 import { readFile } from 'fs/promises'
 import path from 'path'
+import { getMatchUploadsDir } from '@/lib/uploadsDir'
 
 /** Only allow UUID-based filenames with a safe extension — blocks path traversal. */
 const SAFE_STORED_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]{2,5}$/i
@@ -62,7 +63,7 @@ export async function GET(
   let buffer: Buffer
   try {
     buffer = await readFile(
-      path.join(process.cwd(), 'uploads', params.matchId, params.storedName)
+      path.join(getMatchUploadsDir(params.matchId), params.storedName)
     )
   } catch {
     return NextResponse.json({ error: 'File not found on disk' }, { status: 404 })
